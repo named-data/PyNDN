@@ -36,9 +36,9 @@ def _encode(value, tt):
 
 	return bytearray(blocks)
 
-class CCNBDecoder(object):
-	def __init__(self, ccnb_data):
-		self.ccnb_data = ccnb_data
+class NDNBDecoder(object):
+	def __init__(self, ndnb_data):
+		self.ndnb_data = ndnb_data
 		self.reset()
 
 	def reset(self):
@@ -49,9 +49,9 @@ class CCNBDecoder(object):
 	def _process_next_byte(self):
 		global __TT_HBIT__, __TT_LBIT__
 
-		assert self.position < len(self.ccnb_data)
+		assert self.position < len(self.ndnb_data)
 
-		char = ord(self.ccnb_data[self.position])
+		char = ord(self.ndnb_data[self.position])
 		self.position += 1
 
 		if self.decoded == 0 and char == 0:
@@ -91,7 +91,7 @@ class CCNBDecoder(object):
 	def get_tags(self):
 		global __TT_MASK__, __TT_BITS__
 
-		while self.position < len(self.ccnb_data):
+		while self.position < len(self.ndnb_data):
 			while True:
 				decoded, complete = self._process_next_byte()
 				if complete:
@@ -109,7 +109,7 @@ class CCNBDecoder(object):
 				if tt == 2:
 					self.stack.append((tt, value))
 				elif tt == 5:
-					data = self.ccnb_data[self.position:self.position + value]
+					data = self.ndnb_data[self.position:self.position + value]
 					self.position += value
 
 			self.print_element(tt, value, data)

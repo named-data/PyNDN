@@ -29,8 +29,8 @@ While Python supports threading, when your function is being called
 you don't have to worry about threads stepping over it. That's
 because Python has a main lock which is locked whenever extension
 function is being called. Sometimes though, your call performs an
-operation that blocks for extended period of time (ccn_run or
-ccn_Get for example) in that case you probably should wrap your
+operation that blocks for extended period of time (ndn_run or
+ndn_Get for example) in that case you probably should wrap your
 blocking statement with
 Py_BEGIN_ALLOW_THREADS
 and

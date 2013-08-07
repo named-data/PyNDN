@@ -16,7 +16,7 @@ struct completed_closure {
 };
 #  endif
 
-enum _pyccn_capsules {
+enum _pyndn_capsules {
 	CLOSURE = 1,
 	CONTENT_OBJECT,
 	EXCLUSION_FILTER,
@@ -35,22 +35,22 @@ enum _pyccn_capsules {
 };
 
 struct content_object_data {
-	struct ccn_parsed_ContentObject *pco;
-	struct ccn_indexbuf *comps;
+	struct ndn_parsed_ContentObject *pco;
+	struct ndn_indexbuf *comps;
 };
 
 struct interest_data {
-	struct ccn_parsed_interest *pi;
+	struct ndn_parsed_interest *pi;
 };
 
-PyObject *CCNObject_New(enum _pyccn_capsules type, void *pointer);
-PyObject *CCNObject_Borrow(enum _pyccn_capsules type, void *pointer);
-int CCNObject_ReqType(enum _pyccn_capsules type, PyObject *capsule);
-int CCNObject_IsValid(enum _pyccn_capsules type, PyObject *capsule);
-void *CCNObject_Get(enum _pyccn_capsules type, PyObject *capsule);
+PyObject *NDNObject_New(enum _pyndn_capsules type, void *pointer);
+PyObject *NDNObject_Borrow(enum _pyndn_capsules type, void *pointer);
+int NDNObject_ReqType(enum _pyndn_capsules type, PyObject *capsule);
+int NDNObject_IsValid(enum _pyndn_capsules type, PyObject *capsule);
+void *NDNObject_Get(enum _pyndn_capsules type, PyObject *capsule);
 
-PyObject *CCNObject_New_Closure(struct ccn_closure **closure);
-PyObject *CCNObject_New_charbuf(enum _pyccn_capsules type,
-		struct ccn_charbuf **p);
+PyObject *NDNObject_New_Closure(struct ndn_closure **closure);
+PyObject *NDNObject_New_charbuf(enum _pyndn_capsules type,
+		struct ndn_charbuf **p);
 
 #endif	/* OBJECTS_H */

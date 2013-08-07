@@ -1,4 +1,4 @@
-from pyccn import CCN, Name, Interest, Closure
+from pyndn import NDN, Name, Interest, Closure
 from time import sleep
 
 worked = False
@@ -12,12 +12,12 @@ class MyClosure(Closure):
 		print(upcallInfo)
 		worked = True
 
-n = Name("ccnx:/ccnx/ping")
+n = Name("ndn:/ndnx/ping")
 
 i = Interest()
 closure = MyClosure()
 
-c = CCN()
+c = NDN()
 res = c.expressInterest(n, closure, i)
 print(res)
 

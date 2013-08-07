@@ -3,8 +3,8 @@
 TESTS = \
 	importModule.py \
 	enums.py \
-	ccnConnection.py \
-	ccnRun.py \
+	ndnConnection.py \
+	ndnRun.py \
 	names.py \
 	get.py \
 	expressInterest.py \

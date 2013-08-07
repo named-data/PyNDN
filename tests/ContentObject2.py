@@ -1,18 +1,18 @@
-import pyccn
-import pyccn._pyccn as _pyccn
+import pyndn
+import pyndn._pyndn as _pyndn
 
-k = pyccn.CCN.getDefaultKey()
+k = pyndn.NDN.getDefaultKey()
 
-kl = pyccn.KeyLocator(k)
+kl = pyndn.KeyLocator(k)
 
-i = pyccn.Interest()
-i.name = pyccn.Name('/chat')
+i = pyndn.Interest()
+i.name = pyndn.Name('/chat')
 i.minSuffixComponents = 3
 i.maxSuffixComponents = 3
 i.childSelector = 1
 
-co = pyccn.ContentObject()
-co.name = pyccn.Name('/chat/%FD%04%E6%93.%18K/%00')
+co = pyndn.ContentObject()
+co.name = pyndn.Name('/chat/%FD%04%E6%93.%18K/%00')
 co.content = "number 0"
 co.signedInfo.publisherPublicKeyDigest = k.publicKeyID
 co.signedInfo.finalBlockID = b'\x00'
@@ -20,7 +20,7 @@ co.sign(k)
 
 print(str(co))
 
-co2 = _pyccn.ContentObject_obj_from_ccn(co.ccn_data)
+co2 = _pyndn.ContentObject_obj_from_ndn(co.ndn_data)
 print(str(co2))
 
 print(str(i))

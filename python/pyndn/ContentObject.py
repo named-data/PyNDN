@@ -5,11 +5,11 @@
 #             Jeff Burke <jburke@ucla.edu>
 #
 
-from . import _pyccn
+from . import _pyndn
 import utils
 
 class ContentType(utils.Enum):
-	_prefix = "pyccn"
+	_prefix = "pyndn"
 
 CONTENT_DATA = ContentType.new_flag('CONTENT_DATA', 0x0C04C0)
 CONTENT_ENCR = ContentType.new_flag('CONTENT_ENCR', 0x10D091)
@@ -30,47 +30,47 @@ class ContentObject(object):
 		self.signature = None
 		self.verified = False
 
-		# pyccn
-		self.ccn = None # Reference to CCN object
-		self.ccn_data_dirty = True
-		self.ccn_data = None  # backing charbuf
+		# pyndn
+		self.ndn = None # Reference to NDN object
+		self.ndn_data_dirty = True
+		self.ndn_data = None  # backing charbuf
 
 	# this is the finalization step
 	# must pass a key here, there is no "default key" because
-	# a CCN handle is not required to create the content object
-	# thus there is no access to the ccn library keystore.
+	# a NDN handle is not required to create the content object
+	# thus there is no access to the ndn library keystore.
 	#
 	def sign(self, key):
-		self.ccn_data = _pyccn.encode_ContentObject(self, self.name.ccn_data, \
-			self.content, self.signedInfo.ccn_data, key)
-		self.ccn_data_dirty = False
+		self.ndn_data = _pyndn.encode_ContentObject(self, self.name.ndn_data, \
+			self.content, self.signedInfo.ndn_data, key)
+		self.ndn_data_dirty = False
 
 	def digest(self):
-		return _pyccn.digest_contentobject(self.ccn_data)
+		return _pyndn.digest_contentobject(self.ndn_data)
 
 	def verify_content(self, handle):
-		return _pyccn.verify_content(handle.ccn_data, self.ccn_data)
+		return _pyndn.verify_content(handle.ndn_data, self.ndn_data)
 
 	def verify_signature(self, key):
-		return _pyccn.verify_signature(self.ccn_data, key.ccn_data_public)
+		return _pyndn.verify_signature(self.ndn_data, key.ndn_data_public)
 
 	def matchesInterest(self, interest):
-		return _pyccn.content_matches_interest(self.ccn_data, interest.ccn_data)
+		return _pyndn.content_matches_interest(self.ndn_data, interest.ndn_data)
 
 	def __setattr__(self, name, value):
 		if name == 'name' or name == 'content' or name == 'signedInfo' or name == 'digestAlgorithm':
-			self.ccn_data_dirty = True
+			self.ndn_data_dirty = True
 
 		if name == 'content':
-			object.__setattr__(self, name, _pyccn.content_to_bytes(value))
+			object.__setattr__(self, name, _pyndn.content_to_bytes(value))
 		else:
 			object.__setattr__(self, name, value)
 
 	def __getattribute__(self, name):
-		if name == "ccn_data":
-			if object.__getattribute__(self, 'ccn_data_dirty'):
-				raise _pyccn.CCNContentObjectError("Call sign() to finalize \
-					before accessing ccn_data for a ContentObject")
+		if name == "ndn_data":
+			if object.__getattribute__(self, 'ndn_data_dirty'):
+				raise _pyndn.NDNContentObjectError("Call sign() to finalize \
+					before accessing ndn_data for a ContentObject")
 		return object.__getattribute__(self, name)
 
 	# Where do we support versioning and segmentation?
@@ -99,7 +99,7 @@ class ContentObject(object):
 		if self.signature is not None:
 			args += ["<signed>"]
 
-		return "pyccn.ContentObject(%s)" % ", ".join(args)
+		return "pyndn.ContentObject(%s)" % ", ".join(args)
 
 class Signature(object):
 	def __init__(self):
@@ -107,20 +107,20 @@ class Signature(object):
 		self.witness = None
 		self.signatureBits = None
 
-		# pyccn
-		self.ccn_data_dirty = False
-		self.ccn_data = None
+		# pyndn
+		self.ndn_data_dirty = False
+		self.ndn_data = None
 
 	def __setattr__(self, name, value):
 		if name == 'witness' or name == 'signatureBits' or name == 'digestAlgorithm':
-			self.ccn_data_dirty = True
+			self.ndn_data_dirty = True
 		object.__setattr__(self, name, value)
 
 	def __getattribute__(self, name):
-		if name == "ccn_data":
-			if object.__getattribute__(self, 'ccn_data_dirty'):
-				self.ccn_data = _pyccn.Signature_obj_to_ccn(self)
-				self.ccn_data_dirty = False
+		if name == "ndn_data":
+			if object.__getattribute__(self, 'ndn_data_dirty'):
+				self.ndn_data = _pyndn.Signature_obj_to_ndn(self)
+				self.ndn_data_dirty = False
 		return object.__getattribute__(self, name)
 
 	def __str__(self):
@@ -140,7 +140,7 @@ class SignedInfo(object):
 		if py_timestamp is not None:
 			if timestamp:
 				raise ValueError("You can define only timestamp or py_timestamp")
-			self.timeStamp = utils.py2ccn_time(py_timestamp)
+			self.timeStamp = utils.py2ndn_time(py_timestamp)
 		else:
 			self.timeStamp = timestamp
 
@@ -149,13 +149,13 @@ class SignedInfo(object):
 		self.finalBlockID = final_block
 		self.keyLocator = key_locator
 
-		# pyccn
-		self.ccn_data_dirty = True
-		self.ccn_data = None  # backing charbuf
+		# pyndn
+		self.ndn_data_dirty = True
+		self.ndn_data = None  # backing charbuf
 
 	def __setattr__(self, name, value):
-		if name != "ccn_data" and name != "ccn_data_dirty":
-			self.ccn_data_dirty = True
+		if name != "ndn_data" and name != "ndn_data_dirty":
+			self.ndn_data_dirty = True
 
 		if name == "type" and type(value) is not ContentType:
 			value = ContentType(value)
@@ -163,19 +163,19 @@ class SignedInfo(object):
 		object.__setattr__(self, name, value)
 
 	def __getattribute__(self, name):
-		if name == "ccn_data":
-			if object.__getattribute__(self, 'ccn_data_dirty'):
-				key_locator = self.keyLocator.ccn_data if self.keyLocator else None
-				self.ccn_data = _pyccn.SignedInfo_to_ccn(\
+		if name == "ndn_data":
+			if object.__getattribute__(self, 'ndn_data_dirty'):
+				key_locator = self.keyLocator.ndn_data if self.keyLocator else None
+				self.ndn_data = _pyndn.SignedInfo_to_ndn(\
 					self.publisherPublicKeyDigest, self.type, self.timeStamp, \
 					self.freshnessSeconds or (-1), self.finalBlockID, key_locator)
-				self.ccn_data_dirty = False
+				self.ndn_data_dirty = False
 
 		if name == "py_timestamp":
 			ts = self.timeStamp
 			if ts is None:
 				return None
-			return None if ts is None else utils.ccn2py_time(ts)
+			return None if ts is None else utils.ndn2py_time(ts)
 
 		return object.__getattribute__(self, name)
 
@@ -195,7 +195,7 @@ class SignedInfo(object):
 		if self.timeStamp is not None:
 			args += ["py_timestamp=%r" % self.py_timestamp]
 
-		return "pyccn.SignedInfo(%s)" % ", ".join(args)
+		return "pyndn.SignedInfo(%s)" % ", ".join(args)
 
 #
 #
@@ -204,41 +204,41 @@ class SignedInfo(object):
 # is needed.
 
 class SigningParams(object):
-	CCN_SP_TEMPL_TIMESTAMP = 0x0001
-	CCN_SP_TEMPL_FINAL_BLOCK_ID = 0x0002
-	CCN_SP_TEMPL_FRESHNESS = 0x0004
-	CCN_SP_TEMPL_KEY_LOCATOR = 0x0008
-	CCN_SP_FINAL_BLOCK = 0x0010
-	CCN_SP_OMIT_KEY_LOCATOR = 0x0020
+	NDN_SP_TEMPL_TIMESTAMP = 0x0001
+	NDN_SP_TEMPL_FINAL_BLOCK_ID = 0x0002
+	NDN_SP_TEMPL_FRESHNESS = 0x0004
+	NDN_SP_TEMPL_KEY_LOCATOR = 0x0008
+	NDN_SP_FINAL_BLOCK = 0x0010
+	NDN_SP_OMIT_KEY_LOCATOR = 0x0020
 
 	def __init__(self):
-		self.flags;       # Use the CCN_SP flags above
+		self.flags;       # Use the NDN_SP flags above
 		self.type;        # Content type, really should be somewhere else, it's not that related to signing
 		self.freshness;
 
 		# These three are only relevant, for now, if they are coming *from* a c object
-		# otherwise, API version is filled in from CCN_SIGNING_PARAMS_INIT and
+		# otherwise, API version is filled in from NDN_SIGNING_PARAMS_INIT and
 		# both template and key will come from the ContentObject's SignedInfo object
 		self.apiVersion;
 		self.template;    # SignedInfo referred to by this content object,
 		self.key;         # Key to use - this should filled by a lookup against content object's signedinfo,
 
-		# pyccn
-		self.ccn_data_dirty = False
-		self.ccn_data = None  # backing ccn_signing_params
+		# pyndn
+		self.ndn_data_dirty = False
+		self.ndn_data = None  # backing ndn_signing_params
 
 	def __setattr__(self, name, value):
-		if name != "ccn_data" and name != "ccn_data_dirty":
-			self.ccn_data_dirty = True
+		if name != "ndn_data" and name != "ndn_data_dirty":
+			self.ndn_data_dirty = True
 		object.__setattr__(self, name, value)
 
 	def __getattribute__(self, name):
-		if name == "ccn_data":
-			if object.__getattribute__(self, 'ccn_data_dirty'):
-				self.ccn_data = _pyccn._pyccn_SigningParams_to_ccn(self)
-				self.ccn_data_dirty = False
+		if name == "ndn_data":
+			if object.__getattribute__(self, 'ndn_data_dirty'):
+				self.ndn_data = _pyndn._pyndn_SigningParams_to_ndn(self)
+				self.ndn_data_dirty = False
 		return object.__getattribute__(self, name)
 
-	def __get_ccn(self):
+	def __get_ndn(self):
 		pass
-		# Call ccn_signed_info_create
+		# Call ndn_signed_info_create

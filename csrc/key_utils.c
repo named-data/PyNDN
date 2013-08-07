@@ -7,11 +7,11 @@
 
 #include "python_hdr.h"
 
-#include <ccn/ccn.h>
-#include <ccn/digest.h>
-#include <ccn/uri.h>
-#include <ccn/signing.h>
-#include <ccn/keystore.h>
+#include <ndn/ndn.h>
+#include <ndn/digest.h>
+#include <ndn/uri.h>
+#include <ndn/signing.h>
+#include <ndn/keystore.h>
 
 // On MacOS X, need to have the latest version from MacPorts
 // and add /opt/local/include as an include path
@@ -26,7 +26,7 @@
 #include <assert.h>
 
 #include "key_utils.h"
-#include "pyccn.h"
+#include "pyndn.h"
 #include "objects.h"
 #include "util.h"
 
@@ -87,7 +87,7 @@ static int
 create_key_digest(const unsigned char *dkey, size_t dkey_size,
 		unsigned char **o_key_digest, size_t *o_key_digest_size)
 {
-	struct ccn_digest *digest;
+	struct ndn_digest *digest;
 	unsigned char *key_digest = NULL;
 	size_t key_digest_size;
 	int r;
@@ -95,22 +95,22 @@ create_key_digest(const unsigned char *dkey, size_t dkey_size,
 	assert(o_key_digest);
 	assert(o_key_digest_size);
 
-	digest = ccn_digest_create(CCN_DIGEST_SHA256);
+	digest = ndn_digest_create(NDN_DIGEST_SHA256);
 	JUMP_IF_NULL(digest, error);
 
-	ccn_digest_init(digest);
-	key_digest_size = ccn_digest_size(digest);
+	ndn_digest_init(digest);
+	key_digest_size = ndn_digest_size(digest);
 
 	key_digest = malloc(key_digest_size);
 	JUMP_IF_NULL(key_digest, error);
 
-	r = ccn_digest_update(digest, dkey, dkey_size);
+	r = ndn_digest_update(digest, dkey, dkey_size);
 	JUMP_IF_NEG(r, error);
 
-	r = ccn_digest_final(digest, key_digest, key_digest_size);
+	r = ndn_digest_final(digest, key_digest, key_digest_size);
 	JUMP_IF_NEG(r, error);
 
-	ccn_digest_destroy(&digest);
+	ndn_digest_destroy(&digest);
 
 	*o_key_digest = key_digest;
 	*o_key_digest_size = key_digest_size;
@@ -118,10 +118,10 @@ create_key_digest(const unsigned char *dkey, size_t dkey_size,
 	return 0;
 
 error:
-	PyErr_SetString(g_PyExc_CCNKeyError, "unable to generate key digest");
+	PyErr_SetString(g_PyExc_NDNKeyError, "unable to generate key digest");
 	if (key_digest)
 		free(key_digest);
-	ccn_digest_destroy(&digest);
+	ndn_digest_destroy(&digest);
 	return -1;
 }
 
@@ -186,7 +186,7 @@ create_public_key_digest(RSA *private_key_rsa,
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to generate digest from the key:"
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to generate digest from the key:"
 			" %s", ERR_reason_error_string(err));
 error:
 	if (public_key_rsa)
@@ -199,31 +199,31 @@ error:
 }
 
 int
-ccn_keypair_from_rsa(int public_only, RSA *private_key_rsa,
-		PyObject **py_private_key_ccn, PyObject **py_public_key_ccn)
+ndn_keypair_from_rsa(int public_only, RSA *private_key_rsa,
+		PyObject **py_private_key_ndn, PyObject **py_public_key_ndn)
 {
-	struct ccn_pkey *private_key = NULL, *public_key = NULL;
+	struct ndn_pkey *private_key = NULL, *public_key = NULL;
 	PyObject *py_private_key = NULL, *py_public_key = NULL;
 	unsigned int err;
 	int r;
 	RSA *public_key_rsa;
 
-	if (!public_only && py_private_key_ccn) {
-		private_key = (struct ccn_pkey *) EVP_PKEY_new();
+	if (!public_only && py_private_key_ndn) {
+		private_key = (struct ndn_pkey *) EVP_PKEY_new();
 		JUMP_IF_NULL(private_key, openssl_error);
 
-		py_private_key = CCNObject_New(PKEY_PRIV, private_key);
+		py_private_key = NDNObject_New(PKEY_PRIV, private_key);
 		JUMP_IF_NULL(py_private_key, error);
 
 		r = EVP_PKEY_set1_RSA((EVP_PKEY*) private_key, private_key_rsa);
 		JUMP_IF_NEG(r, openssl_error);
 	}
 
-	if (py_public_key_ccn) {
-		public_key = (struct ccn_pkey *) EVP_PKEY_new();
+	if (py_public_key_ndn) {
+		public_key = (struct ndn_pkey *) EVP_PKEY_new();
 		JUMP_IF_NULL(public_key, openssl_error);
 
-		py_public_key = CCNObject_New(PKEY_PUB, public_key);
+		py_public_key = NDNObject_New(PKEY_PUB, public_key);
 		JUMP_IF_NULL(py_public_key, error);
 
 		public_key_rsa = RSAPublicKey_dup(private_key_rsa);
@@ -234,43 +234,43 @@ ccn_keypair_from_rsa(int public_only, RSA *private_key_rsa,
 		JUMP_IF_NULL(r, error);
 	}
 
-	if (py_private_key_ccn) {
-		*py_private_key_ccn = public_only ? (Py_INCREF(Py_None), Py_None) :
+	if (py_private_key_ndn) {
+		*py_private_key_ndn = public_only ? (Py_INCREF(Py_None), Py_None) :
 				py_private_key;
 	}
 
-	if (py_public_key_ccn)
-		*py_public_key_ccn = py_public_key;
+	if (py_public_key_ndn)
+		*py_public_key_ndn = py_public_key;
 
 	return 0;
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to generate keypair from the key:"
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to generate keypair from the key:"
 			" %s", ERR_reason_error_string(err));
 error:
 	if (!py_public_key && public_key)
-		ccn_pubkey_free(public_key);
+		ndn_pubkey_free(public_key);
 	Py_XDECREF(py_public_key);
 	if (!py_private_key && private_key)
-		ccn_pubkey_free(private_key);
+		ndn_pubkey_free(private_key);
 	Py_XDECREF(py_private_key);
 	return -1;
 }
 
 PyObject *
-_pyccn_privatekey_dup(const struct ccn_pkey *key)
+_pyndn_privatekey_dup(const struct ndn_pkey *key)
 {
 	RSA *private_key_rsa;
 	PyObject *py_private_key = NULL;
-	struct ccn_pkey *private_key;
+	struct ndn_pkey *private_key;
 	unsigned int err;
 	int r;
 
-	private_key = (struct ccn_pkey *) EVP_PKEY_new();
+	private_key = (struct ndn_pkey *) EVP_PKEY_new();
 	JUMP_IF_NULL(private_key, openssl_error);
 
-	py_private_key = CCNObject_New(PKEY_PRIV, private_key);
+	py_private_key = NDNObject_New(PKEY_PRIV, private_key);
 	if (!py_private_key) {
 		EVP_PKEY_free((EVP_PKEY *) private_key);
 		goto error;
@@ -287,7 +287,7 @@ _pyccn_privatekey_dup(const struct ccn_pkey *key)
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to generate keypair from the key:"
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to generate keypair from the key:"
 			" %s", ERR_reason_error_string(err));
 error:
 	Py_XDECREF(py_private_key);
@@ -329,8 +329,8 @@ generate_RSA_keypair(unsigned char** private_key_der, size_t *private_key_len,
 //
 
 int
-generate_key(int length, PyObject **py_private_key_ccn,
-		PyObject **py_public_key_ccn, PyObject **py_public_key_digest,
+generate_key(int length, PyObject **py_private_key_ndn,
+		PyObject **py_public_key_ndn, PyObject **py_public_key_digest,
 		int *public_key_digest_len)
 {
 	RSA *private_key_rsa;
@@ -344,13 +344,13 @@ generate_key(int length, PyObject **py_private_key_ccn,
 		unsigned int err;
 
 		err = ERR_get_error();
-		PyErr_Format(g_PyExc_CCNKeyError, "Unable to generate digest from the"
+		PyErr_Format(g_PyExc_NDNKeyError, "Unable to generate digest from the"
 				" key: %s", ERR_reason_error_string(err));
 		return -1;
 	}
 
-	r = ccn_keypair_from_rsa(0, private_key_rsa, py_private_key_ccn,
-			py_public_key_ccn);
+	r = ndn_keypair_from_rsa(0, private_key_rsa, py_private_key_ndn,
+			py_public_key_ndn);
 	if (r < 0)
 		return -1;
 
@@ -379,15 +379,15 @@ generate_keypair(int length, struct keypair** KP)
 //
 
 int
-write_key_pem_private(FILE *fp, struct ccn_pkey *private_key_ccn)
+write_key_pem_private(FILE *fp, struct ndn_pkey *private_key_ndn)
 {
 	RSA *private_key_rsa;
 	unsigned long err;
 
-	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) private_key_ccn);
+	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) private_key_ndn);
 	if (!private_key_rsa) {
 		err = ERR_get_error();
-		PyErr_Format(g_PyExc_CCNKeyError, "Unable to obtain EVP PKEY: %s",
+		PyErr_Format(g_PyExc_NDNKeyError, "Unable to obtain EVP PKEY: %s",
 				ERR_reason_error_string(err));
 		return -1;
 	}
@@ -395,7 +395,7 @@ write_key_pem_private(FILE *fp, struct ccn_pkey *private_key_ccn)
 	if (!PEM_write_RSAPrivateKey(fp, private_key_rsa, NULL, NULL, 0, NULL, NULL)) {
 		err = ERR_get_error();
 		RSA_free(private_key_rsa);
-		PyErr_Format(g_PyExc_CCNKeyError, "Unable to write Private Key: %s",
+		PyErr_Format(g_PyExc_NDNKeyError, "Unable to write Private Key: %s",
 				ERR_reason_error_string(err));
 		return -1;
 	}
@@ -407,15 +407,15 @@ write_key_pem_private(FILE *fp, struct ccn_pkey *private_key_ccn)
 }
 
 int
-write_key_pem_public(FILE *fp, struct ccn_pkey *private_key_ccn)
+write_key_pem_public(FILE *fp, struct ndn_pkey *private_key_ndn)
 {
 	RSA *private_key_rsa;
 	unsigned long err;
 
-	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY*) private_key_ccn);
+	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY*) private_key_ndn);
 	if (!private_key_rsa) {
 		err = ERR_get_error();
-		PyErr_Format(g_PyExc_CCNKeyError, "Unable to obtain EVP PKEY: %s",
+		PyErr_Format(g_PyExc_NDNKeyError, "Unable to obtain EVP PKEY: %s",
 				ERR_reason_error_string(err));
 		return -1;
 	}
@@ -423,7 +423,7 @@ write_key_pem_public(FILE *fp, struct ccn_pkey *private_key_ccn)
 	if (!PEM_write_RSAPublicKey(fp, private_key_rsa)) {
 		err = ERR_get_error();
 		RSA_free(private_key_rsa);
-		PyErr_Format(g_PyExc_CCNKeyError, "Unable to write Public Key: %s",
+		PyErr_Format(g_PyExc_NDNKeyError, "Unable to write Public Key: %s",
 				ERR_reason_error_string(err));
 		return -1;
 	}
@@ -433,7 +433,7 @@ write_key_pem_public(FILE *fp, struct ccn_pkey *private_key_ccn)
 }
 
 PyObject *
-get_key_pem_private(const struct ccn_pkey *private_key_ccn)
+get_key_pem_private(const struct ndn_pkey *private_key_ndn)
 {
 	unsigned long err;
 	RSA *private_key_rsa = NULL;
@@ -445,7 +445,7 @@ get_key_pem_private(const struct ccn_pkey *private_key_ccn)
 	bio = BIO_new(BIO_s_mem());
 	JUMP_IF_NULL(bio, openssl_error);
 
-	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) private_key_ccn);
+	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) private_key_ndn);
 	JUMP_IF_NULL(private_key_rsa, openssl_error);
 
 	r = PEM_write_bio_RSAPrivateKey(bio, private_key_rsa, NULL, NULL, 0, NULL,
@@ -465,7 +465,7 @@ get_key_pem_private(const struct ccn_pkey *private_key_ccn)
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to obtain PEM: %s",
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to obtain PEM: %s",
 			ERR_reason_error_string(err));
 	RSA_free(private_key_rsa);
 	BIO_free(bio);
@@ -473,7 +473,7 @@ openssl_error:
 }
 
 PyObject *
-get_key_pem_public(const struct ccn_pkey *key_ccn)
+get_key_pem_public(const struct ndn_pkey *key_ndn)
 {
 	unsigned long err;
 	RSA *public_key_rsa = NULL;
@@ -485,7 +485,7 @@ get_key_pem_public(const struct ccn_pkey *key_ccn)
 	bio = BIO_new(BIO_s_mem());
 	JUMP_IF_NULL(bio, openssl_error);
 
-	public_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) key_ccn);
+	public_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) key_ndn);
 	JUMP_IF_NULL(public_key_rsa, openssl_error);
 
 	r = PEM_write_bio_RSAPublicKey(bio, public_key_rsa);
@@ -504,7 +504,7 @@ get_key_pem_public(const struct ccn_pkey *key_ccn)
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to obtain PEM: %s",
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to obtain PEM: %s",
 			ERR_reason_error_string(err));
 	RSA_free(public_key_rsa);
 	BIO_free(bio);
@@ -512,7 +512,7 @@ openssl_error:
 }
 
 PyObject *
-get_key_der_private(struct ccn_pkey *private_key_ccn)
+get_key_der_private(struct ndn_pkey *private_key_ndn)
 {
 	PyObject *result;
 	RSA *private_key_rsa;
@@ -520,9 +520,9 @@ get_key_der_private(struct ccn_pkey *private_key_ccn)
 	unsigned char *private_key_der = NULL;
 	int der_len;
 
-	assert(private_key_ccn);
+	assert(private_key_ndn);
 
-	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) private_key_ccn);
+	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) private_key_ndn);
 	JUMP_IF_NULL(private_key_rsa, openssl_error);
 
 	der_len = i2d_RSAPrivateKey(private_key_rsa, &private_key_der);
@@ -537,7 +537,7 @@ get_key_der_private(struct ccn_pkey *private_key_ccn)
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to write Private Key: %s",
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to write Private Key: %s",
 			ERR_reason_error_string(err));
 error:
 	RSA_free(private_key_rsa);
@@ -545,7 +545,7 @@ error:
 }
 
 PyObject *
-get_key_der_public(struct ccn_pkey *public_key_ccn)
+get_key_der_public(struct ndn_pkey *public_key_ndn)
 {
 	PyObject *result;
 	RSA *public_key_rsa;
@@ -553,7 +553,7 @@ get_key_der_public(struct ccn_pkey *public_key_ccn)
 	unsigned char *public_key_der = NULL;
 	int der_len;
 
-	public_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) public_key_ccn);
+	public_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) public_key_ndn);
 	JUMP_IF_NULL(public_key_rsa, openssl_error);
 
 	//i2d_RSAPublicKey() is also valid, but openssl doesn't
@@ -570,7 +570,7 @@ get_key_der_public(struct ccn_pkey *public_key_ccn)
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to write Public Key: %s",
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to write Public Key: %s",
 			ERR_reason_error_string(err));
 error:
 	RSA_free(public_key_rsa);
@@ -582,8 +582,8 @@ error:
 //
 
 int
-read_key_pem(FILE *fp, PyObject **py_private_key_ccn,
-		PyObject **py_public_key_ccn, PyObject **py_public_key_digest,
+read_key_pem(FILE *fp, PyObject **py_private_key_ndn,
+		PyObject **py_public_key_ndn, PyObject **py_public_key_digest,
 		int *public_key_digest_len)
 {
 	RSA *private_key_rsa = NULL;
@@ -624,15 +624,15 @@ read_key_pem(FILE *fp, PyObject **py_private_key_ccn,
 		char buf[256];
 
 		ERR_error_string_n(err, buf, sizeof(buf));
-		PyErr_Format(g_PyExc_CCNKeyError, "Unable to read Private Key: %s",
+		PyErr_Format(g_PyExc_NDNKeyError, "Unable to read Private Key: %s",
 				buf);
 		goto error;
 	}
 
 success:
 
-	r = ccn_keypair_from_rsa(public_only, private_key_rsa, py_private_key_ccn,
-			py_public_key_ccn);
+	r = ndn_keypair_from_rsa(public_only, private_key_rsa, py_private_key_ndn,
+			py_public_key_ndn);
 	JUMP_IF_NEG(r, error);
 
 	r = create_public_key_digest(private_key_rsa, py_public_key_digest,
@@ -655,7 +655,7 @@ error:
 
 int
 put_key_pem(int is_public_only, PyObject *py_key_pem,
-		PyObject **py_private_key_ccn, PyObject **py_public_key_ccn,
+		PyObject **py_private_key_ndn, PyObject **py_public_key_ndn,
 		PyObject **py_public_key_digest)
 {
 	unsigned char *key_pem;
@@ -677,8 +677,8 @@ put_key_pem(int is_public_only, PyObject *py_key_pem,
 		key_rsa = PEM_read_bio_RSAPrivateKey(bio, NULL, NULL, NULL);
 	JUMP_IF_NULL(key_rsa, openssl_error);
 
-	r = ccn_keypair_from_rsa(is_public_only, key_rsa, py_private_key_ccn,
-			py_public_key_ccn);
+	r = ndn_keypair_from_rsa(is_public_only, key_rsa, py_private_key_ndn,
+			py_public_key_ndn);
 	JUMP_IF_NEG(r, error);
 
 	r = create_public_key_digest(key_rsa, py_public_key_digest, NULL);
@@ -690,7 +690,7 @@ put_key_pem(int is_public_only, PyObject *py_key_pem,
 
 openssl_error:
 	err = ERR_get_error();
-	PyErr_Format(g_PyExc_CCNKeyError, "Unable to parse key: %s",
+	PyErr_Format(g_PyExc_NDNKeyError, "Unable to parse key: %s",
 			ERR_reason_error_string(err));
 error:
 	RSA_free(key_rsa);
@@ -700,7 +700,7 @@ error:
 
 int
 put_key_der(int is_public_only, PyObject *py_key_der,
-		PyObject **py_private_key_ccn, PyObject **py_public_key_ccn,
+		PyObject **py_private_key_ndn, PyObject **py_public_key_ndn,
 		PyObject **py_public_key_digest, int *public_key_digest_len)
 {
 	RSA *key_rsa = NULL;
@@ -721,8 +721,8 @@ put_key_der(int is_public_only, PyObject *py_key_der,
 	key_der = NULL;
 	JUMP_IF_NULL(key_rsa, openssl_error);
 
-	r = ccn_keypair_from_rsa(is_public_only, key_rsa, py_private_key_ccn,
-			py_public_key_ccn);
+	r = ndn_keypair_from_rsa(is_public_only, key_rsa, py_private_key_ndn,
+			py_public_key_ndn);
 	JUMP_IF_NEG(r, error);
 
 	r = create_public_key_digest(key_rsa, py_public_key_digest,
@@ -739,7 +739,7 @@ openssl_error:
 		char buf[256];
 
 		ERR_error_string_n(err, buf, sizeof(buf));
-		PyErr_Format(g_PyExc_CCNKeyError, "Unable to read Private Key: %s",
+		PyErr_Format(g_PyExc_NDNKeyError, "Unable to read Private Key: %s",
 				buf);
 	}
 
@@ -756,7 +756,7 @@ read_keypair_pem(FILE *fp, struct keypair** KP)
 	(*KP) = (struct keypair*) calloc(sizeof(struct keypair), 1);
 	RSA *private_key_rsa;
 	PEM_read_RSAPrivateKey(fp, &private_key_rsa, NULL, NULL);
-	ccn_keypair_from_rsa(private_key_rsa, &(*KP)->private_key, &(*KP)->public_key);
+	ndn_keypair_from_rsa(private_key_rsa, &(*KP)->private_key, &(*KP)->public_key);
 	create_public_key_digest(private_key_rsa, &(*KP)->public_key_digest, &(*KP)->public_key_digest_len);
 	RSA_free(private_key_rsa);
 	return 0;
@@ -764,12 +764,12 @@ read_keypair_pem(FILE *fp, struct keypair** KP)
 #endif
 
 int
-release_key(struct ccn_pkey** private_key_ccn, struct ccn_pkey** public_key_ccn, unsigned char** public_key_digest)
+release_key(struct ndn_pkey** private_key_ndn, struct ndn_pkey** public_key_ndn, unsigned char** public_key_digest)
 {
-	if (public_key_ccn && *public_key_ccn)
-		EVP_PKEY_free((EVP_PKEY*) * public_key_ccn);
-	if (private_key_ccn && *private_key_ccn)
-		EVP_PKEY_free((EVP_PKEY*) * private_key_ccn);
+	if (public_key_ndn && *public_key_ndn)
+		EVP_PKEY_free((EVP_PKEY*) * public_key_ndn);
+	if (private_key_ndn && *private_key_ndn)
+		EVP_PKEY_free((EVP_PKEY*) * private_key_ndn);
 	if (public_key_digest && *public_key_digest)
 		free(*public_key_digest);
 	return 0;
@@ -784,25 +784,25 @@ release_keypair(struct keypair** KP)
 }
 
 int
-build_keylocator_from_key(struct ccn_charbuf** keylocator, struct ccn_pkey* key)
+build_keylocator_from_key(struct ndn_charbuf** keylocator, struct ndn_pkey* key)
 {
 	int res = 0;
 
-	*keylocator = ccn_charbuf_create();
+	*keylocator = ndn_charbuf_create();
 
-	ccn_charbuf_append_tt(*keylocator, CCN_DTAG_KeyLocator, CCN_DTAG);
-	ccn_charbuf_append_tt(*keylocator, CCN_DTAG_Key, CCN_DTAG);
+	ndn_charbuf_append_tt(*keylocator, NDN_DTAG_KeyLocator, NDN_DTAG);
+	ndn_charbuf_append_tt(*keylocator, NDN_DTAG_Key, NDN_DTAG);
 
-	res = ccn_append_pubkey_blob(*keylocator, key);
+	res = ndn_append_pubkey_blob(*keylocator, key);
 
-	ccn_charbuf_append_closer(*keylocator); /* </Key> */
-	ccn_charbuf_append_closer(*keylocator); /* </KeyLocator> */
+	ndn_charbuf_append_closer(*keylocator); /* </Key> */
+	ndn_charbuf_append_closer(*keylocator); /* </KeyLocator> */
 
 	return(res);
 }
 
 int
-get_ASN_public_key(unsigned char** public_key_der, int* public_key_der_len, struct ccn_pkey* private_key)
+get_ASN_public_key(unsigned char** public_key_der, int* public_key_der_len, struct ndn_pkey* private_key)
 {
 	unsigned char *pub;
 	//DER encode / pkcs#1
@@ -814,15 +814,15 @@ get_ASN_public_key(unsigned char** public_key_der, int* public_key_der_len, stru
 }
 
 RSA *
-ccn_key_to_rsa(struct ccn_pkey *key_ccn)
+ndn_key_to_rsa(struct ndn_pkey *key_ndn)
 {
 	RSA *private_key_rsa;
 	unsigned int err;
 
-	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) key_ccn);
+	private_key_rsa = EVP_PKEY_get1_RSA((EVP_PKEY *) key_ndn);
 	if (!private_key_rsa) {
 		err = ERR_get_error();
-		PyErr_Format(g_PyExc_CCNKeyError, "Error obtaining private key: %s",
+		PyErr_Format(g_PyExc_NDNKeyError, "Error obtaining private key: %s",
 				ERR_reason_error_string(err));
 		return NULL;
 	}

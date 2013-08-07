@@ -5,8 +5,8 @@
 #             Jeff Burke <jburke@ucla.edu>
 #
 
-import pyccn
-from . import _pyccn
+import pyndn
+from . import _pyndn
 
 from copy import copy
 import time, struct, random
@@ -15,39 +15,39 @@ NAME_NORMAL = 0
 NAME_ANY    = 1
 
 class Name(object):
-	def __init__(self, components=[], name_type=NAME_NORMAL, ccn_data=None):
+	def __init__(self, components=[], name_type=NAME_NORMAL, ndn_data=None):
 		self._setattr('type', name_type)
 
-		# pyccn
-		#self._setattr('ccn_data_dirty', True)
-		self._setattr('ccn_data', ccn_data)
+		# pyndn
+		#self._setattr('ndn_data_dirty', True)
+		self._setattr('ndn_data', ndn_data)
 
-		# Name from CCN
-		if ccn_data:
-			self._setattr('components', _pyccn.name_comps_from_ccn(ccn_data))
-			self._setattr('ccn_data_dirty', False)
+		# Name from NDN
+		if ndn_data:
+			self._setattr('components', _pyndn.name_comps_from_ndn(ndn_data))
+			self._setattr('ndn_data_dirty', False)
 
 		# Copy Name from another Name object
 		elif isinstance(components, self.__class__):
 			self._setattr('components', copy(components.components))
-			if not components.ccn_data_dirty:
-				self._setattr('ccn_data', components.ccn_data)
-				self._setattr('ccn_data_dirty', False)
+			if not components.ndn_data_dirty:
+				self._setattr('ndn_data', components.ndn_data)
+				self._setattr('ndn_data_dirty', False)
 
 		# Name as string (URI)
 		elif type(components) is str:
-			ccn_data = _pyccn.name_from_uri(components)
-			self._setattr('components', _pyccn.name_comps_from_ccn(ccn_data))
-			self._setattr('ccn_data', ccn_data)
-			self._setattr('ccn_data_dirty', False)
+			ndn_data = _pyndn.name_from_uri(components)
+			self._setattr('components', _pyndn.name_comps_from_ndn(ndn_data))
+			self._setattr('ndn_data', ndn_data)
+			self._setattr('ndn_data_dirty', False)
 
 		# Otherwise assume name is a list
 		else:
 			self._setattr('components', copy(components))
 
 	def _setattr(self, name, value):
-		if name == 'components' or name == 'ccn_data':
-			self._setattr('ccn_data_dirty', True)
+		if name == 'components' or name == 'ndn_data':
+			self._setattr('ndn_data_dirty', True)
 		super(Name, self).__setattr__(name, value)
 
 	def _append(self, component):
@@ -63,7 +63,7 @@ class Name(object):
 		return Name(components)
 
 	def appendKeyID(self, digest):
-		if isinstance(digest, pyccn.Key):
+		if isinstance(digest, pyndn.Key):
 			digest = digest.publicKeyID
 
 		component = b'\xc1.M.K\x00'
@@ -89,16 +89,16 @@ class Name(object):
 
 		return self._append(component)
 
-	def get_ccnb(self):
-		return _pyccn.dump_charbuf(self.ccn_data)
+	def get_ndnb(self):
+		return _pyndn.dump_charbuf(self.ndn_data)
 
 	def __repr__(self):
 		global NAME_NORMAL, NAME_ANY
 
 		if self.type == NAME_NORMAL:
-			return "pyccn.Name('ccnx:" + _pyccn.name_to_uri(self.ccn_data) + "')"
+			return "pyndn.Name('ndn:" + _pyndn.name_to_uri(self.ndn_data) + "')"
 		elif self.type == NAME_ANY:
-			return "pyccn.Name(name_type=pyccn.NAME_ANY)"
+			return "pyndn.Name(name_type=pyndn.NAME_ANY)"
 		else:
 			raise ValueError("Name is of wrong type %d" % self.type)
 
@@ -106,7 +106,7 @@ class Name(object):
 		global NAME_NORMAL, NAME_ANY
 
 		if self.type == NAME_NORMAL:
-			return _pyccn.name_to_uri(self.ccn_data)
+			return _pyndn.name_to_uri(self.ndn_data)
 		elif self.type == NAME_ANY:
 			return "<any>"
 		else:
@@ -124,10 +124,10 @@ class Name(object):
 	__delattr__ = __setattr__
 
 	def __getattribute__(self, name):
-		if name == "ccn_data":
-			if object.__getattribute__(self, 'ccn_data_dirty'):
-				self._setattr('ccn_data', _pyccn.name_comps_to_ccn(self.components))
-				self._setattr('ccn_data_dirty', False)
+		if name == "ndn_data":
+			if object.__getattribute__(self, 'ndn_data_dirty'):
+				self._setattr('ndn_data', _pyndn.name_comps_to_ndn(self.components))
+				self._setattr('ndn_data_dirty', False)
 		return object.__getattribute__(self, name)
 
 	def __getitem__(self, key):
@@ -148,22 +148,22 @@ class Name(object):
 		return len(self.components)
 
 	def __lt__(self, other):
-		return _pyccn.compare_names(self.ccn_data, other.ccn_data) < 0
+		return _pyndn.compare_names(self.ndn_data, other.ndn_data) < 0
 
 	def __gt__(self, other):
-		return _pyccn.compare_names(self.ccn_data, other.ccn_data) > 0
+		return _pyndn.compare_names(self.ndn_data, other.ndn_data) > 0
 
 	def __eq__(self, other):
-		return _pyccn.compare_names(self.ccn_data, other.ccn_data) == 0
+		return _pyndn.compare_names(self.ndn_data, other.ndn_data) == 0
 
 	def __le__(self, other):
-		return _pyccn.compare_names(self.ccn_data, other.ccn_data) <= 0
+		return _pyndn.compare_names(self.ndn_data, other.ndn_data) <= 0
 
 	def __ge__(self, other):
-		return _pyccn.compare_names(self.ccn_data, other.ccn_data) >= 0
+		return _pyndn.compare_names(self.ndn_data, other.ndn_data) >= 0
 
 	def __ne__(self, other):
-		return _pyccn.compare_names(self.ccn_data, other.ccn_data) != 0
+		return _pyndn.compare_names(self.ndn_data, other.ndn_data) != 0
 
 	@staticmethod
 	def num2seg(num):

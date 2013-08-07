@@ -21,7 +21,7 @@
 
 #include <arpa/inet.h>
 
-#include <ccn/ccn.h>
+#include <ndn/ndn.h>
 
 #include "toolkit.h"
 #include "authentication.h"
@@ -198,12 +198,12 @@ verify_update_state_freshness(state * currstate, state * new_state, unsigned lon
 /*
  * commandname is an NDN name of a light including the command
  * e.g. commandname = /ndn/ucla.edu/apps/TV1/room123/light4/switch/on
- * commandname is ccn_charbuf containing a ccnb encoded name with closing 0x00
+ * commandname is ndn_charbuf containing a ndnb encoded name with closing 0x00
  * authenticatedCommand = commandname/(AUTH_MAGIC|appname_len|appname|state|MAC(commandname|appname|state))
  * where appname_len is fixed 2 bytes and AUTH_MAGIC is fixed 4 bytes
  */
 void
-authenticateCommand(state *st, struct ccn_charbuf *commandname, unsigned char *appname, unsigned int appname_len, unsigned char *appkey)
+authenticateCommand(state *st, struct ndn_charbuf *commandname, unsigned char *appname, unsigned int appname_len, unsigned char *appkey)
 {
 	unsigned char mac[MACLEN];
 	unsigned char *m;
@@ -258,7 +258,7 @@ authenticateCommand(state *st, struct ccn_charbuf *commandname, unsigned char *a
     memcpy(authenticator + mac_offset, mac, MACLEN);
 
     // Construct authenticated name
-	ccn_name_append(commandname, authenticatorwithmagic, authenticatorlen + AUTH_MAGIC_LEN);
+	ndn_name_append(commandname, authenticatorwithmagic, authenticatorlen + AUTH_MAGIC_LEN);
 
 
 #ifdef AUTHDEBUG
@@ -291,21 +291,21 @@ detect_autenticator(unsigned char * component)
 }
 
 static int
-extractFromInterest(unsigned char ** authenticatorwithmagic, unsigned int * auth_len, unsigned char ** prefix, unsigned int * prefix_len, struct ccn_charbuf *name)
+extractFromInterest(unsigned char ** authenticatorwithmagic, unsigned int * auth_len, unsigned char ** prefix, unsigned int * prefix_len, struct ndn_charbuf *name)
 {
-	struct ccn_indexbuf *nix = ccn_indexbuf_create();
+	struct ndn_indexbuf *nix = ndn_indexbuf_create();
 	int num_components, i, atype;
 	size_t len;
     
 	unsigned char * out;
     
-	num_components = ccn_name_split(name, nix);
+	num_components = ndn_name_split(name, nix);
     
 	i = num_components - 1;
 	while (i > 0) // The first component cannot be an authenticator
 	{
-		if (ccn_name_comp_get(name->buf, nix, i, (const unsigned char **) &out, &len)) {
-            ccn_indexbuf_destroy(&nix);
+		if (ndn_name_comp_get(name->buf, nix, i, (const unsigned char **) &out, &len)) {
+            ndn_indexbuf_destroy(&nix);
 			return FAIL_MISSING_AUTHENTICATOR;
         }
 		atype = detect_autenticator(out);
@@ -314,7 +314,7 @@ extractFromInterest(unsigned char ** authenticatorwithmagic, unsigned int * auth
 			memcpy(*authenticatorwithmagic, out, len);
 			*auth_len = (unsigned int) len;
             
-			ccn_name_comp_get(name->buf, nix, i - 1, (const unsigned char **) &out, &len);
+			ndn_name_comp_get(name->buf, nix, i - 1, (const unsigned char **) &out, &len);
 			*prefix_len = (unsigned int) (len + (out - name->buf)) + 2;
             
 #ifdef AUTHDEBUG
@@ -334,21 +334,21 @@ extractFromInterest(unsigned char ** authenticatorwithmagic, unsigned int * auth
             printf("\n");
 #endif
             
-			ccn_indexbuf_destroy(&nix);
+			ndn_indexbuf_destroy(&nix);
             
 			return atype;
 		}
 		i--;
 	}
     
-	ccn_indexbuf_destroy(&nix);
+	ndn_indexbuf_destroy(&nix);
     return FAIL_MISSING_AUTHENTICATOR; // No authenticator in the string
 }
 
 
 /* Determines if an interest is authenticated with symmetric or asymmetric crypto and verifies it accordingly */
 int
-verifyCommand(struct ccn_charbuf *authenticatedname, unsigned char *fixtureKey,
+verifyCommand(struct ndn_charbuf *authenticatedname, unsigned char *fixtureKey,
 		unsigned int keylen, RSA *pubkey, state *currstate, unsigned long int maxTimeDifferenceMsec)
 {
 	unsigned char * authenticatorwithmagic, * prefix;
@@ -481,7 +481,7 @@ verifyCommandSymm(unsigned char *authenticator, unsigned int auth_len,
  * and RSA_signature is Sig(commandname|appname|state) ; commandname doesn't have trailing '/'
  */
 void
-authenticateCommandSig(state * st, struct ccn_charbuf * commandname, unsigned char * appname, unsigned int appname_len, RSA * app_signing_key)
+authenticateCommandSig(state * st, struct ndn_charbuf * commandname, unsigned char * appname, unsigned int appname_len, RSA * app_signing_key)
 {
 	int command_len;
     int msg_len;
@@ -534,7 +534,7 @@ authenticateCommandSig(state * st, struct ccn_charbuf * commandname, unsigned ch
     printf("\n");
 #endif
 
-	ccn_name_append(commandname, authenticatorwithmagic, AUTH_MAGIC_LEN + 2 + appname_len + state_len + auth_len);
+	ndn_name_append(commandname, authenticatorwithmagic, AUTH_MAGIC_LEN + 2 + appname_len + state_len + auth_len);
 
 	free(authenticatorwithmagic);
 	free(msg);

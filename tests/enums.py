@@ -1,4 +1,4 @@
-import pyccn.utils as utils
+import pyndn.utils as utils
 
 class Test1(utils.Enum):
 	pass

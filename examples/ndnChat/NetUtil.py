@@ -5,11 +5,11 @@
 #
 
 import time
-import pyccn
+import pyndn
 
-class FlowController(pyccn.Closure):
+class FlowController(pyndn.Closure):
 	def __init__(self, prefix, handle):
-		self.prefix = pyccn.Name(prefix)
+		self.prefix = pyndn.Name(prefix)
 		self.handle = handle
 		self.content_objects = []
 
@@ -28,12 +28,12 @@ class FlowController(pyccn.Closure):
 		return True
 
 	def upcall(self, kind, info):
-		if kind in [pyccn.UPCALL_FINAL, pyccn.UPCALL_CONSUMED_INTEREST]:
-			return pyccn.RESULT_OK
+		if kind in [pyndn.UPCALL_FINAL, pyndn.UPCALL_CONSUMED_INTEREST]:
+			return pyndn.RESULT_OK
 
-		if kind != pyccn.UPCALL_INTEREST:
+		if kind != pyndn.UPCALL_INTEREST:
 			print("Got weird upcall kind: %d" % kind)
-			return pyccn.RESULT_ERR
+			return pyndn.RESULT_ERR
 
 		f = lambda elem: self.dispatch(info.Interest, elem)
 
@@ -46,18 +46,18 @@ class FlowController(pyccn.Closure):
 			consumed = True
 		self.content_objects = new
 
-		return pyccn.RESULT_INTEREST_CONSUMED if consumed else pyccn.RESULT_OK
+		return pyndn.RESULT_INTEREST_CONSUMED if consumed else pyndn.RESULT_OK
 
-class VersionedPull(pyccn.Closure):
+class VersionedPull(pyndn.Closure):
 	def __init__(self, base_name, callback, handle=None, version=None, latest=True):
-		handle = handle or pyccn.CCN()
+		handle = handle or pyndn.NDN()
 
 		# some constants
 		self.version_marker = '\xfd'
 		self.first_version_marker = self.version_marker
 		self.last_version_marker = '\xfe\x00\x00\x00\x00\x00\x00'
 
-		self.base_name = pyccn.Name(base_name)
+		self.base_name = pyndn.Name(base_name)
 		self.callback = callback
 		self.handle = handle
 		self.latest_version = version or self.first_version_marker
@@ -68,14 +68,14 @@ class VersionedPull(pyccn.Closure):
 			latest=True
 			self.start_with_latest = False
 
-		excl = pyccn.ExclusionFilter()
+		excl = pyndn.ExclusionFilter()
 		excl.add_any()
-		excl.add_name(pyccn.Name([self.latest_version]))
+		excl.add_name(pyndn.Name([self.latest_version]))
 		# expected result should be between those two names
-		excl.add_name(pyccn.Name([self.last_version_marker]))
+		excl.add_name(pyndn.Name([self.last_version_marker]))
 		excl.add_any()
 
-		interest = pyccn.Interest(name=self.base_name, exclude=excl, \
+		interest = pyndn.Interest(name=self.base_name, exclude=excl, \
 			minSuffixComponents=3, maxSuffixComponents=3)
 		interest.childSelector = 1 if latest else 0
 		return interest
@@ -95,37 +95,37 @@ class VersionedPull(pyccn.Closure):
 		self.handle.expressInterest(interest.name, self, interest)
 
 	def upcall(self, kind, info):
-		if kind == pyccn.UPCALL_FINAL:
-			return pyccn.RESULT_OK
+		if kind == pyndn.UPCALL_FINAL:
+			return pyndn.RESULT_OK
 
 		# update version
-		if kind in [pyccn.UPCALL_CONTENT, pyccn.UPCALL_CONTENT_UNVERIFIED]:
+		if kind in [pyndn.UPCALL_CONTENT, pyndn.UPCALL_CONTENT_UNVERIFIED]:
 			base_len = len(self.base_name)
 			self.latest_version = info.ContentObject.name[base_len]
 
 		self.callback(kind, info)
 
-		return pyccn.RESULT_OK
+		return pyndn.RESULT_OK
 
 if __name__ == '__main__':
-	from pyccn import _pyccn, Key, ContentObject
+	from pyndn import _pyndn, Key, ContentObject
 
 	def publish(name, content):
-		key = pyccn.CCN.getDefaultKey()
-		keylocator = pyccn.KeyLocator(key)
+		key = pyndn.NDN.getDefaultKey()
+		keylocator = pyndn.KeyLocator(key)
 
 		# Name
-		co_name = pyccn.Name(name).appendSegment(0)
+		co_name = pyndn.Name(name).appendSegment(0)
 
 		# SignedInfo
-		si = pyccn.SignedInfo()
-		si.type = pyccn.CONTENT_DATA
-		si.finalBlockID = pyccn.Name.num2seg(0)
+		si = pyndn.SignedInfo()
+		si.type = pyndn.CONTENT_DATA
+		si.finalBlockID = pyndn.Name.num2seg(0)
 		si.publisherPublicKeyDigest = key.publicKeyID
 		si.keyLocator = keylocator
 
 		# ContentObject
-		co = pyccn.ContentObject()
+		co = pyndn.ContentObject()
 		co.content = content
 		co.name = co_name
 		co.signedInfo = si
@@ -136,12 +136,12 @@ if __name__ == '__main__':
 	def callback(kind, info):
 		print(info.ContentObject.content)
 
-	fc = FlowController("/test", pyccn.CCN())
+	fc = FlowController("/test", pyndn.NDN())
 	fc.put(publish('/test/1', 'one'))
 	fc.put(publish('/test/2', 'two'))
 	fc.put(publish('/test/3', 'three'))
 	vp = VersionedPull("/chat", callback)
-	el = pyccn.EventLoop(fc.handle, vp.handle)
+	el = pyndn.EventLoop(fc.handle, vp.handle)
 
 	while True:
 		vp.requestNext()

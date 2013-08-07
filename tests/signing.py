@@ -1,8 +1,8 @@
-import pyccn
+import pyndn
 
-k = pyccn.CCN.getDefaultKey()
+k = pyndn.NDN.getDefaultKey()
 
-co = pyccn.ContentObject()
+co = pyndn.ContentObject()
 try:
 	co.sign(k)
 except AttributeError:
@@ -10,10 +10,10 @@ except AttributeError:
 else:
 	raise AssertionError("this should fail!")
 
-co.name = pyccn.Name("/foo/foo")
-co.signedInfo = pyccn.SignedInfo()
+co.name = pyndn.Name("/foo/foo")
+co.signedInfo = pyndn.SignedInfo()
 co.signedInfo.publisherPublicKeyDigest = k.publicKeyID
-co.signedInfo.type = pyccn.CONTENT_DATA
+co.signedInfo.type = pyndn.CONTENT_DATA
 co.signedInfo.freshness = -1
 co.content = "hello!"
 co.sign(k)

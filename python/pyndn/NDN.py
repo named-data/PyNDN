@@ -5,61 +5,61 @@
 #             Jeff Burke <jburke@ucla.edu>
 #
 
-from . import _pyccn
+from . import _pyndn
 import select, time
 import threading
 #import dummy_threading as threading
 
-# Fronts ccn
+# Fronts ndn
 
-# ccn_handle is opaque to c struct
+# ndn_handle is opaque to c struct
 
-class CCN(object):
+class NDN(object):
 	def __init__(self):
 		self._handle_lock = threading.Lock()
-		self.ccn_data = _pyccn.create()
-		_pyccn.connect(self.ccn_data)
+		self.ndn_data = _pyndn.create()
+		_pyndn.connect(self.ndn_data)
 
 	def _acquire_lock(self, tag):
-		if not _pyccn.is_run_executing(self.ccn_data):
+		if not _pyndn.is_run_executing(self.ndn_data):
 #			print("%s: acquiring lock" % tag)
 			self._handle_lock.acquire()
 #			print("%s: lock acquired" % tag)
 
 	def _release_lock(self, tag):
-		if not _pyccn.is_run_executing(self.ccn_data):
+		if not _pyndn.is_run_executing(self.ndn_data):
 #			print("%s: releasing lock" % tag)
 			self._handle_lock.release()
 #			print("%s: lock released" % tag)
 
 	def fileno(self):
-		return _pyccn.get_connection_fd(self.ccn_data)
+		return _pyndn.get_connection_fd(self.ndn_data)
 
 	def process_scheduled(self):
-		assert not _pyccn.is_run_executing(self.ccn_data), "Command should be called when ccn_run is not running"
-		return _pyccn.process_scheduled_operations(self.ccn_data)
+		assert not _pyndn.is_run_executing(self.ndn_data), "Command should be called when ndn_run is not running"
+		return _pyndn.process_scheduled_operations(self.ndn_data)
 
 	def output_is_pending(self):
-		assert not _pyccn.is_run_executing(self.ccn_data), "Command should be called when ccn_run is not running"
-		return _pyccn.output_is_pending(self.ccn_data)
+		assert not _pyndn.is_run_executing(self.ndn_data), "Command should be called when ndn_run is not running"
+		return _pyndn.output_is_pending(self.ndn_data)
 
 	def run(self, timeoutms):
-		assert not _pyccn.is_run_executing(self.ccn_data), "Command should be called when ccn_run is not running"
+		assert not _pyndn.is_run_executing(self.ndn_data), "Command should be called when ndn_run is not running"
 		self._handle_lock.acquire()
 		try:
-			_pyccn.run(self.ccn_data, timeoutms)
+			_pyndn.run(self.ndn_data, timeoutms)
 		finally:
 			self._handle_lock.release()
 
 	def setRunTimeout(self, timeoutms):
-		_pyccn.set_run_timeout(self.ccn_data, timeoutms)
+		_pyndn.set_run_timeout(self.ndn_data, timeoutms)
 
 	# Application-focused methods
 	#
 	def expressInterest(self, name, closure, template = None):
 		self._acquire_lock("expressInterest")
 		try:
-			return _pyccn.express_interest(self, name, closure, template)
+			return _pyndn.express_interest(self, name, closure, template)
 		finally:
 			self._release_lock("expressInterest")
 
@@ -67,33 +67,33 @@ class CCN(object):
 		self._acquire_lock("setInterestFilter")
 		try:
 			if flags is None:
-				return _pyccn.set_interest_filter(self.ccn_data, name.ccn_data, closure)
+				return _pyndn.set_interest_filter(self.ndn_data, name.ndn_data, closure)
 			else:
-				return _pyccn.set_interest_filter(self.ccn_data, name.ccn_data, closure, flags)
+				return _pyndn.set_interest_filter(self.ndn_data, name.ndn_data, closure, flags)
 		finally:
 			self._release_lock("setInterestFilter")
 
 	# Blocking!
 	def get(self, name, template = None, timeoutms = 3000):
-#		if not _pyccn.is_upcall_executing(self.ccn_data):
+#		if not _pyndn.is_upcall_executing(self.ndn_data):
 #			raise Exception, "Get called outside of upcall"
 
 		self._acquire_lock("get")
 		try:
-			return _pyccn.get(self, name, template, timeoutms)
+			return _pyndn.get(self, name, template, timeoutms)
 		finally:
 			self._release_lock("get")
 
 	def put(self, contentObject):
 		self._acquire_lock("put")
 		try:
-			return _pyccn.put(self, contentObject)
+			return _pyndn.put(self, contentObject)
 		finally:
 			self._release_lock("put")
 
 	@staticmethod
 	def getDefaultKey():
-		return _pyccn.get_default_key()
+		return _pyndn.get_default_key()
 
 class EventLoop(object):
 	def __init__(self, *handles):

@@ -1,11 +1,11 @@
-from pyccn import _pyccn, CCN, Name
+from pyndn import _pyndn, NDN, Name
 import sys
 
 comps = ['this', 'is', 'some', 'name']
 print(comps)
 
-ccn_name = _pyccn.name_comps_to_ccn(comps)
-comps2 = _pyccn.name_comps_from_ccn(ccn_name)
+ndn_name = _pyndn.name_comps_to_ndn(comps)
+comps2 = _pyndn.name_comps_from_ndn(ndn_name)
 print(comps2)
 
 #for comp1, comp2 in zip(map(lambda x: bytearray(x), comps), comps2):
@@ -19,7 +19,7 @@ print(str(n))
 if str(n) != "/hello/world":
 	raise AssertionError("expected /hello/world")
 
-n = Name("ccnx:///testing/1/2/3/")
+n = Name("ndn:///testing/1/2/3/")
 print(str(n))
 if str(n) != "/testing/1/2/3":
 	raise AssertionError("expected /testing/1/2/3 got: " + str(n))

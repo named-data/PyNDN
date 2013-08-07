@@ -11,15 +11,15 @@
 #  define NAME_TYPE_NORMAL 0
 #  define NAME_TYPE_ANY 1
 
-PyObject *_pyccn_cmd_name_comps_to_ccn(PyObject *self, PyObject *py_name_components);
-PyObject *_pyccn_cmd_name_comps_from_ccn(PyObject *self, PyObject *py_cname);
-PyObject *Name_obj_from_ccn(PyObject *ccn_data);
-PyObject *Name_obj_to_ccn(PyObject *py_name);
-PyObject *Name_from_ccn_tagged_bytearray(const unsigned char *buf,
+PyObject *_pyndn_cmd_name_comps_to_ndn(PyObject *self, PyObject *py_name_components);
+PyObject *_pyndn_cmd_name_comps_from_ndn(PyObject *self, PyObject *py_cname);
+PyObject *Name_obj_from_ndn(PyObject *ndn_data);
+PyObject *Name_obj_to_ndn(PyObject *py_name);
+PyObject *Name_from_ndn_tagged_bytearray(const unsigned char *buf,
 		size_t size);
-PyObject *_pyccn_cmd_name_from_uri(PyObject *self, PyObject *py_uri);
-PyObject *_pyccn_cmd_name_to_uri(PyObject *self, PyObject *py_name);
-PyObject *_pyccn_cmd_compare_names(PyObject *self, PyObject *args);
+PyObject *_pyndn_cmd_name_from_uri(PyObject *self, PyObject *py_uri);
+PyObject *_pyndn_cmd_name_to_uri(PyObject *self, PyObject *py_name);
+PyObject *_pyndn_cmd_compare_names(PyObject *self, PyObject *args);
 
 #endif	/* METHODS_NAME_H */
 

@@ -7,9 +7,9 @@
 
 #define PY_SSIZE_T_CLEAN 1
 #include "python_hdr.h"
-#include <ccn/ccn.h>
+#include <ndn/ndn.h>
 
-#include "pyccn.h"
+#include "pyndn.h"
 #include "util.h"
 #include "key_utils.h"
 #include "methods.h"
@@ -23,7 +23,7 @@
 // Registering callbacks
 
 PyObject *
-_pyccn_cmd_generate_RSA_key(PyObject *UNUSED(self), PyObject *args)
+_pyndn_cmd_generate_RSA_key(PyObject *UNUSED(self), PyObject *args)
 {
 	PyObject *py_key, *py_o;
 	long keylen;
@@ -42,15 +42,15 @@ _pyccn_cmd_generate_RSA_key(PyObject *UNUSED(self), PyObject *args)
 	r = generate_key(keylen, &py_private_key, &py_public_key,
 			&py_public_key_digest, &public_key_digest_len);
 	if (r < 0) {
-		PyErr_SetString(g_PyExc_CCNKeyError, "Unable to genearate a key");
+		PyErr_SetString(g_PyExc_NDNKeyError, "Unable to genearate a key");
 		return NULL;
 	}
 
-	r = PyObject_SetAttrString(py_key, "ccn_data_private", py_private_key);
+	r = PyObject_SetAttrString(py_key, "ndn_data_private", py_private_key);
 	Py_CLEAR(py_private_key);
 	JUMP_IF_NEG(r, error);
 
-	r = PyObject_SetAttrString(py_key, "ccn_data_public", py_public_key);
+	r = PyObject_SetAttrString(py_key, "ndn_data_public", py_public_key);
 	Py_CLEAR(py_public_key);
 	JUMP_IF_NEG(r, error);
 
@@ -77,10 +77,10 @@ error:
 // ** Methods of SignedInfo
 //
 // Signing
-/* We don't expose this because ccn_signing_params is not that useful to us
+/* We don't expose this because ndn_signing_params is not that useful to us
  * see comments above on this.
 static PyObject* // int
-_pyccn_ccn_chk_signing_params(PyObject* self, PyObject* args) {
+_pyndn_ndn_chk_signing_params(PyObject* self, PyObject* args) {
 	// Build internal signing params struct
 	return 0;
 }
@@ -89,7 +89,7 @@ _pyccn_ccn_chk_signing_params(PyObject* self, PyObject* args) {
 /* We don't expose this because it is done automatically in the Python SignedInfo object
 
 static PyObject*
-_pyccn_ccn_signed_info_create(PyObject* self, PyObject* args) {
+_pyndn_ndn_signed_info_create(PyObject* self, PyObject* args) {
 	return 0;
 }
 
@@ -102,41 +102,41 @@ _pyccn_ccn_signed_info_create(PyObject* self, PyObject* args) {
 
 // Note that SigningParams information is essentially redundant
 // to what's in SignedInfo, and is internal to the
-// ccn libraries.
-// See the source for ccn_sign_content, for example.
+// ndn libraries.
+// See the source for ndn_sign_content, for example.
 //
 // To use it requires working with keystores & hashtables to
 // reference keys, which requires accessing private functions in the library
 //
-// So, we don't provide "to_ccn" functionality here, only "from_ccn" in case
+// So, we don't provide "to_ndn" functionality here, only "from_ndn" in case
 // there is a need to parse a struct coming from the c library.
 
 
 // Can be called directly from c library
 //
-// Pointer to a struct ccn_signing_params
+// Pointer to a struct ndn_signing_params
 //
 
 static PyObject *
-obj_SigningParams_from_ccn(PyObject *py_signing_params)
+obj_SigningParams_from_ndn(PyObject *py_signing_params)
 {
-	struct ccn_signing_params *signing_params;
+	struct ndn_signing_params *signing_params;
 	PyObject *py_obj_SigningParams, *py_o;
 	int r;
 
 	assert(g_type_SigningParams);
 
-	debug("SigningParams_from_ccn start\n");
+	debug("SigningParams_from_ndn start\n");
 
-	signing_params = CCNObject_Get(SIGNING_PARAMS, py_signing_params);
+	signing_params = NDNObject_Get(SIGNING_PARAMS, py_signing_params);
 
 	// 1) Create python object
 	py_obj_SigningParams = PyObject_CallObject(g_type_SigningParams, NULL);
 	JUMP_IF_NULL(py_obj_SigningParams, error);
 
-	// 2) Set ccn_data to a cobject pointing to the c struct
+	// 2) Set ndn_data to a cobject pointing to the c struct
 	//    and ensure proper destructor is set up for the c object.
-	r = PyObject_SetAttrString(py_obj_SigningParams, "ccn_data",
+	r = PyObject_SetAttrString(py_obj_SigningParams, "ndn_data",
 			py_signing_params);
 	JUMP_IF_NEG(r, error);
 
@@ -144,47 +144,47 @@ obj_SigningParams_from_ccn(PyObject *py_signing_params)
 	// 3) Parse c structure and fill python attributes
 	//    using PyObject_SetAttrString
 
-	py_o = _pyccn_Int_FromLong(signing_params->sp_flags);
+	py_o = _pyndn_Int_FromLong(signing_params->sp_flags);
 	JUMP_IF_NULL(py_o, error);
 	r = PyObject_SetAttrString(py_obj_SigningParams, "flags", py_o);
 	Py_DECREF(py_o);
 	JUMP_IF_NEG(r, error);
 
-	py_o = _pyccn_Int_FromLong(signing_params->type);
+	py_o = _pyndn_Int_FromLong(signing_params->type);
 	JUMP_IF_NULL(py_o, error);
 	r = PyObject_SetAttrString(py_obj_SigningParams, "type", py_o);
 	Py_DECREF(py_o);
 	JUMP_IF_NEG(r, error);
 
-	py_o = _pyccn_Int_FromLong(signing_params->freshness);
+	py_o = _pyndn_Int_FromLong(signing_params->freshness);
 	JUMP_IF_NULL(py_o, error);
 	r = PyObject_SetAttrString(py_obj_SigningParams, "freshness", py_o);
 	Py_DECREF(py_o);
 	JUMP_IF_NEG(r, error);
 
-	py_o = _pyccn_Int_FromLong(signing_params->api_version);
+	py_o = _pyndn_Int_FromLong(signing_params->api_version);
 	JUMP_IF_NULL(py_o, error);
 	r = PyObject_SetAttrString(py_obj_SigningParams, "apiVersion", py_o);
 	Py_DECREF(py_o);
 	JUMP_IF_NEG(r, error);
 
-	if (signing_params->template_ccnb &&
-			signing_params->template_ccnb->length > 0) {
+	if (signing_params->template_ndnb &&
+			signing_params->template_ndnb->length > 0) {
 		PyObject *py_signed_object;
-		struct ccn_charbuf *signed_object;
+		struct ndn_charbuf *signed_object;
 
-		py_signed_object = CCNObject_New_charbuf(SIGNED_INFO, &signed_object);
+		py_signed_object = NDNObject_New_charbuf(SIGNED_INFO, &signed_object);
 		JUMP_IF_NULL(py_signed_object, error);
 
-		r = ccn_charbuf_append_charbuf(signed_object,
-				signing_params->template_ccnb);
+		r = ndn_charbuf_append_charbuf(signed_object,
+				signing_params->template_ndnb);
 		if (r < 0) {
 			Py_DECREF(py_signed_object);
 			PyErr_NoMemory();
 			goto error;
 		}
 
-		py_o = SignedInfo_obj_from_ccn(py_signed_object);
+		py_o = SignedInfo_obj_from_ndn(py_signed_object);
 		Py_DECREF(py_signed_object);
 		JUMP_IF_NULL(py_o, error);
 	} else
@@ -204,7 +204,7 @@ obj_SigningParams_from_ccn(PyObject *py_signing_params)
 	JUMP_IF_NEG(r, error);
 
 	// 4) Return the created object
-	debug("SigningParams_from_ccn ends\n");
+	debug("SigningParams_from_ndn ends\n");
 
 	return py_obj_SigningParams;
 
@@ -214,22 +214,22 @@ error:
 }
 
 PyObject *
-_pyccn_SigningParams_from_ccn(PyObject *UNUSED(self),
+_pyndn_SigningParams_from_ndn(PyObject *UNUSED(self),
 		PyObject *py_signing_params)
 {
-	if (!CCNObject_IsValid(SIGNING_PARAMS, py_signing_params)) {
-		PyErr_SetString(PyExc_TypeError, "Must pass a CCN SigningParams");
+	if (!NDNObject_IsValid(SIGNING_PARAMS, py_signing_params)) {
+		PyErr_SetString(PyExc_TypeError, "Must pass a NDN SigningParams");
 		return NULL;
 	}
 
-	return obj_SigningParams_from_ccn(py_signing_params);
+	return obj_SigningParams_from_ndn(py_signing_params);
 }
 
 PyObject *
-_pyccn_cmd_dump_charbuf(PyObject *UNUSED(self), PyObject *py_charbuf)
+_pyndn_cmd_dump_charbuf(PyObject *UNUSED(self), PyObject *py_charbuf)
 {
-	const struct ccn_charbuf *charbuf;
-	static const enum _pyccn_capsules types[] = {
+	const struct ndn_charbuf *charbuf;
+	static const enum _pyndn_capsules types[] = {
 		CONTENT_OBJECT,
 		EXCLUSION_FILTER,
 		INTEREST,
@@ -238,11 +238,11 @@ _pyccn_cmd_dump_charbuf(PyObject *UNUSED(self), PyObject *py_charbuf)
 		SIGNATURE,
 		SIGNED_INFO
 	};
-	enum _pyccn_capsules type;
+	enum _pyndn_capsules type;
 	static const size_t len = sizeof(types) / sizeof(type);
 
 	for (size_t i = 0; i < len; i++) {
-		if (CCNObject_IsValid(types[i], py_charbuf)) {
+		if (NDNObject_IsValid(types[i], py_charbuf)) {
 			type = types[i];
 			goto success;
 		}
@@ -252,35 +252,35 @@ _pyccn_cmd_dump_charbuf(PyObject *UNUSED(self), PyObject *py_charbuf)
 	return NULL;
 
 success:
-	charbuf = CCNObject_Get(type, py_charbuf);
+	charbuf = NDNObject_Get(type, py_charbuf);
 
 	return PyBytes_FromStringAndSize((char *) charbuf->buf, charbuf->length);
 }
 
 PyObject *
-_pyccn_cmd_new_charbuf(PyObject *UNUSED(self), PyObject *args)
+_pyndn_cmd_new_charbuf(PyObject *UNUSED(self), PyObject *args)
 {
 	const char *type, *charbuf_data;
 	Py_ssize_t charbuf_data_len;
-	struct ccn_charbuf *charbuf;
+	struct ndn_charbuf *charbuf;
 	PyObject *result = NULL;
 	int r;
-	enum _pyccn_capsules capsule_type;
+	enum _pyndn_capsules capsule_type;
 
 	if (!PyArg_ParseTuple(args, "ss#", &type, &charbuf_data, &charbuf_data_len))
 		return NULL;
 
-	if (strcmp(type, "KeyLocator_ccn_data")) {
+	if (strcmp(type, "KeyLocator_ndn_data")) {
 		PyErr_SetString(PyExc_ValueError, "Expected valid type "
-				"('KeyLocator_ccn_data')");
+				"('KeyLocator_ndn_data')");
 		goto error;
 	}
 	capsule_type = KEY_LOCATOR;
 
-	result = CCNObject_New_charbuf(capsule_type, &charbuf);
+	result = NDNObject_New_charbuf(capsule_type, &charbuf);
 	JUMP_IF_NULL(result, error);
 
-	r = ccn_charbuf_append(charbuf, charbuf_data, charbuf_data_len);
+	r = ndn_charbuf_append(charbuf, charbuf_data, charbuf_data_len);
 	JUMP_IF_NEG_MEM(r, error);
 
 	return result;

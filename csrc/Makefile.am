@@ -1,8 +1,8 @@
-pyccndir = $(PYTHON_SITE_PKG)/pyccn
+pyndndir = $(PYTHON_SITE_PKG)/pyndn
 
-pyccn_LTLIBRARIES = _pyccn.la
+pyndn_LTLIBRARIES = _pyndn.la
 noinst_HEADERS = \
-	pyccn.h \
+	pyndn.h \
 	key_utils.h \
 	methods.h \
 	methods_contentobject.h \
@@ -16,8 +16,8 @@ noinst_HEADERS = \
 	python_hdr.h \
 	util.h
 
-_pyccn_la_SOURCES = \
-	pyccn.c \
+_pyndn_la_SOURCES = \
+	pyndn.c \
 	key_utils.c \
 	methods.c \
 	methods_contentobject.c \
@@ -32,20 +32,20 @@ _pyccn_la_SOURCES = \
 
 
 noinst_HEADERS += methods_namecrypto.h
-_pyccn_la_SOURCES += methods_namecrypto.c \
+_pyndn_la_SOURCES += methods_namecrypto.c \
 	namecrypto/authentication.c \
 	namecrypto/encryption.c \
 	namecrypto/toolkit.c
 
-#_pyccn_la_SOURCES += $(noinst_HEADERS:.h=.h.gch)
+#_pyndn_la_SOURCES += $(noinst_HEADERS:.h=.h.gch)
 
 #-O3 -pedantic -Wall -Wextra -fdiagnostics-show-option -Winvalid-pch
 #-Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -Werror
-_pyccn_la_CPPFLAGS = -std=c99 -Wall -Wextra -Winvalid-pch -Wstrict-prototypes
-_pyccn_la_CPPFLAGS += -Wmissing-prototypes -Wshadow -fdiagnostics-show-option
-_pyccn_la_CPPFLAGS += @PYTHON_CPPFLAGS@ @CCN_INCLUDES@ @OPENSSL_INCLUDES@ -Wno-unknown-pragmas
-_pyccn_la_LDFLAGS = -avoid-version -module @PYTHON_LDFLAGS@ \
-	@CCN_LDFLAGS@ @OPENSSL_LDFLAGS@ @CCN_LIBS@ @OPENSSL_LIBS@
+_pyndn_la_CPPFLAGS = -std=c99 -Wall -Wextra -Winvalid-pch -Wstrict-prototypes
+_pyndn_la_CPPFLAGS += -Wmissing-prototypes -Wshadow -fdiagnostics-show-option
+_pyndn_la_CPPFLAGS += @PYTHON_CPPFLAGS@ @NDN_INCLUDES@ @OPENSSL_INCLUDES@ -Wno-unknown-pragmas
+_pyndn_la_LDFLAGS = -avoid-version -module @PYTHON_LDFLAGS@ \
+	@NDN_LDFLAGS@ @OPENSSL_LDFLAGS@ @NDN_LIBS@ @OPENSSL_LIBS@
 
 .h.h.gch:
 	$(CC) -c $<

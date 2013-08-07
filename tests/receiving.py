@@ -1,4 +1,4 @@
-import pyccn
+import pyndn
 from subprocess import Popen, PIPE
 import threading
 import sys
@@ -11,15 +11,15 @@ def arrgh(x):
 
 class sendMessage(threading.Thread):
 	def run(self):
-		po = Popen(['ccnput', '-x', '5', '-t', 'ENCR', 'ccnx:/messages/hello'], stdin=PIPE)
+		po = Popen(['ndnput', '-x', '5', '-t', 'ENCR', 'ndn:/messages/hello'], stdin=PIPE)
 		po.communicate(arrgh("Hello everyone"))
 #		po.stdin.close()
 		po.wait()
 
 thread = sendMessage()
 
-name = pyccn.Name("ccnx:/messages/hello")
-handle = pyccn.CCN()
+name = pyndn.Name("ndn:/messages/hello")
+handle = pyndn.NDN()
 
 thread.start()
 co = handle.get(name)
@@ -34,7 +34,7 @@ print(co.name)
 assert str(co.name) == "/messages/hello"
 
 signedinfo = co.signedInfo
-assert signedinfo.type == pyccn.CONTENT_ENCR
+assert signedinfo.type == pyndn.CONTENT_ENCR
 
 signature = co.signature
 

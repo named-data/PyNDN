@@ -1,5 +1,5 @@
-import pyccn
-from pyccn import Name, NameCrypto, Key, KeyLocator, CCN
+import pyndn
+from pyndn import Name, NameCrypto, Key, KeyLocator, NDN
 
 window = -1
 
@@ -40,10 +40,10 @@ state = NameCrypto.new_state()
 
 name = Name('/ndn/ucla.edu/apps/cuerda')
 
-key = CCN.getDefaultKey()
+key = NDN.getDefaultKey()
 
 keyLoc = KeyLocator(key)
-keyLocStr = pyccn._pyccn.dump_charbuf(keyLoc.ccn_data)
+keyLocStr = pyndn._pyndn.dump_charbuf(keyLoc.ndn_data)
 
 name = name.append(keyLocStr)
 
@@ -61,8 +61,8 @@ name_from_js2 = Name(
 )
 
 keyLocStr2 = name_from_js2[-2]
-capsule = pyccn._pyccn.new_charbuf('KeyLocator_ccn_data', keyLocStr2)
-keyLoc2 = pyccn._pyccn.KeyLocator_obj_from_ccn(capsule)
+capsule = pyndn._pyndn.new_charbuf('KeyLocator_ndn_data', keyLocStr2)
+keyLoc2 = pyndn._pyndn.KeyLocator_obj_from_ndn(capsule)
 
 state3 = NameCrypto.new_state()
 

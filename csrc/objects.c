@@ -6,13 +6,13 @@
  */
 
 #include "python_hdr.h"
-#include <ccn/ccn.h>
-#include <ccn/charbuf.h>
-#include <ccn/signing.h>
+#include <ndn/ndn.h>
+#include <ndn/charbuf.h>
+#include <ndn/signing.h>
 
 #include <stdlib.h>
 
-#include "pyccn.h"
+#include "pyndn.h"
 #include "objects.h"
 #include "util.h"
 
@@ -21,21 +21,21 @@ static struct completed_closure *g_completed_closures;
  */
 
 static struct type_to_name {
-	enum _pyccn_capsules type;
+	enum _pyndn_capsules type;
 	const char *name;
 } g_types_to_names[] = {
-	{CLOSURE, "Closure_ccn_data"},
-	{CONTENT_OBJECT, "ContentObject_ccn_data"},
-	{EXCLUSION_FILTER, "ExclusionFilter_ccn_data"},
-	{HANDLE, "CCN_ccn_data"},
-	{INTEREST, "Interest_ccn_data"},
-	{KEY_LOCATOR, "KeyLocator_ccn_data"},
-	{NAME, "Name_ccn_data"},
-	{PKEY_PRIV, "PKEY_PRIV_ccn_data"},
-	{PKEY_PUB, "PKEY_PUB_ccn_data"},
-	{SIGNATURE, "Signature_ccn_data"},
-	{SIGNED_INFO, "SignedInfo_ccn_data"},
-	{SIGNING_PARAMS, "SigningParams_ccn_data"},
+	{CLOSURE, "Closure_ndn_data"},
+	{CONTENT_OBJECT, "ContentObject_ndn_data"},
+	{EXCLUSION_FILTER, "ExclusionFilter_ndn_data"},
+	{HANDLE, "NDN_ndn_data"},
+	{INTEREST, "Interest_ndn_data"},
+	{KEY_LOCATOR, "KeyLocator_ndn_data"},
+	{NAME, "Name_ndn_data"},
+	{PKEY_PRIV, "PKEY_PRIV_ndn_data"},
+	{PKEY_PUB, "PKEY_PUB_ndn_data"},
+	{SIGNATURE, "Signature_ndn_data"},
+	{SIGNED_INFO, "SignedInfo_ndn_data"},
+	{SIGNING_PARAMS, "SigningParams_ndn_data"},
 #ifdef NAMECRYPTO
 	{NAMECRYPTO_STATE, "Namecrypto_state"},
 #endif
@@ -43,7 +43,7 @@ static struct type_to_name {
 };
 
 static inline const char *
-type2name(enum _pyccn_capsules type)
+type2name(enum _pyndn_capsules type)
 {
 	struct type_to_name *p;
 
@@ -56,7 +56,7 @@ type2name(enum _pyccn_capsules type)
 	return p->name;
 }
 
-static inline enum _pyccn_capsules
+static inline enum _pyndn_capsules
 name2type(const char *name)
 {
 	struct type_to_name *p;
@@ -74,11 +74,11 @@ name2type(const char *name)
 }
 
 static void
-pyccn_Capsule_Destructor(PyObject *capsule)
+pyndn_Capsule_Destructor(PyObject *capsule)
 {
 	const char *name;
 	void *pointer;
-	enum _pyccn_capsules type;
+	enum _pyndn_capsules type;
 
 	assert(PyCapsule_CheckExact(capsule));
 
@@ -92,7 +92,7 @@ pyccn_Capsule_Destructor(PyObject *capsule)
 	case CLOSURE:
 	{
 		PyObject *py_obj_closure;
-		struct ccn_closure *p = pointer;
+		struct ndn_closure *p = pointer;
 
 		py_obj_closure = PyCapsule_GetContext(capsule);
 		assert(py_obj_closure);
@@ -107,29 +107,29 @@ pyccn_Capsule_Destructor(PyObject *capsule)
 	case CONTENT_OBJECT:
 	{
 		struct content_object_data *context;
-		struct ccn_charbuf *p = pointer;
+		struct ndn_charbuf *p = pointer;
 
 		context = PyCapsule_GetContext(capsule);
 		if (context) {
 			if (context->pco)
 				free(context->pco);
-			ccn_indexbuf_destroy(&context->comps);
+			ndn_indexbuf_destroy(&context->comps);
 			free(context);
 		}
-		ccn_charbuf_destroy(&p);
+		ndn_charbuf_destroy(&p);
 	}
 		break;
 	case HANDLE:
 	{
-		struct ccn *p = pointer;
-		ccn_disconnect(p);
-		ccn_destroy(&p);
+		struct ndn *p = pointer;
+		ndn_disconnect(p);
+		ndn_destroy(&p);
 	}
 		break;
 	case INTEREST:
 	{
 		struct interest_data *context;
-		struct ccn_charbuf *p = pointer;
+		struct ndn_charbuf *p = pointer;
 
 		context = PyCapsule_GetContext(capsule);
 		if (context) {
@@ -137,14 +137,14 @@ pyccn_Capsule_Destructor(PyObject *capsule)
 				free(context->pi);
 			free(context);
 		}
-		ccn_charbuf_destroy(&p);
+		ndn_charbuf_destroy(&p);
 	}
 		break;
 	case PKEY_PRIV:
 	case PKEY_PUB:
 	{
-		struct ccn_pkey *p = pointer;
-		ccn_pubkey_free(p);
+		struct ndn_pkey *p = pointer;
+		ndn_pubkey_free(p);
 	}
 		break;
 	case EXCLUSION_FILTER:
@@ -153,16 +153,16 @@ pyccn_Capsule_Destructor(PyObject *capsule)
 	case SIGNATURE:
 	case SIGNED_INFO:
 	{
-		struct ccn_charbuf *p = pointer;
-		ccn_charbuf_destroy(&p);
+		struct ndn_charbuf *p = pointer;
+		ndn_charbuf_destroy(&p);
 	}
 		break;
 	case SIGNING_PARAMS:
 	{
-		struct ccn_signing_params *p = pointer;
+		struct ndn_signing_params *p = pointer;
 
-		if (p->template_ccnb)
-			ccn_charbuf_destroy(&p->template_ccnb);
+		if (p->template_ndnb)
+			ndn_charbuf_destroy(&p->template_ndnb);
 
 		free(p);
 	}
@@ -179,13 +179,13 @@ pyccn_Capsule_Destructor(PyObject *capsule)
 }
 
 PyObject *
-CCNObject_New(enum _pyccn_capsules type, void *pointer)
+NDNObject_New(enum _pyndn_capsules type, void *pointer)
 {
 	PyObject *capsule;
 	int r;
 
 	assert(pointer);
-	capsule = PyCapsule_New(pointer, type2name(type), pyccn_Capsule_Destructor);
+	capsule = PyCapsule_New(pointer, type2name(type), pyndn_Capsule_Destructor);
 	if (!capsule)
 		return NULL;
 
@@ -230,7 +230,7 @@ error:
 }
 
 PyObject *
-CCNObject_Borrow(enum _pyccn_capsules type, void *pointer)
+NDNObject_Borrow(enum _pyndn_capsules type, void *pointer)
 {
 	PyObject *r;
 
@@ -242,7 +242,7 @@ CCNObject_Borrow(enum _pyccn_capsules type, void *pointer)
 }
 
 int
-CCNObject_ReqType(enum _pyccn_capsules type, PyObject *capsule)
+NDNObject_ReqType(enum _pyndn_capsules type, PyObject *capsule)
 {
 	int r;
 	const char *t = type2name(type);
@@ -255,17 +255,17 @@ CCNObject_ReqType(enum _pyccn_capsules type, PyObject *capsule)
 }
 
 int
-CCNObject_IsValid(enum _pyccn_capsules type, PyObject *capsule)
+NDNObject_IsValid(enum _pyndn_capsules type, PyObject *capsule)
 {
 	return PyCapsule_IsValid(capsule, type2name(type));
 }
 
 void *
-CCNObject_Get(enum _pyccn_capsules type, PyObject *capsule)
+NDNObject_Get(enum _pyndn_capsules type, PyObject *capsule)
 {
 	void *p;
 
-	assert(CCNObject_IsValid(type, capsule));
+	assert(NDNObject_IsValid(type, capsule));
 	p = PyCapsule_GetPointer(capsule, type2name(type));
 	assert(p);
 
@@ -273,16 +273,16 @@ CCNObject_Get(enum _pyccn_capsules type, PyObject *capsule)
 }
 
 PyObject *
-CCNObject_New_Closure(struct ccn_closure **closure)
+NDNObject_New_Closure(struct ndn_closure **closure)
 {
-	struct ccn_closure *p;
+	struct ndn_closure *p;
 	PyObject *result;
 
 	p = calloc(1, sizeof(*p));
 	if (!p)
 		return PyErr_NoMemory();
 
-	result = CCNObject_New(CLOSURE, p);
+	result = NDNObject_New(CLOSURE, p);
 	if (!result) {
 		free(p);
 		return NULL;
@@ -295,10 +295,10 @@ CCNObject_New_Closure(struct ccn_closure **closure)
 }
 
 PyObject *
-CCNObject_New_charbuf(enum _pyccn_capsules type,
-		struct ccn_charbuf **charbuf)
+NDNObject_New_charbuf(enum _pyndn_capsules type,
+		struct ndn_charbuf **charbuf)
 {
-	struct ccn_charbuf *p;
+	struct ndn_charbuf *p;
 	PyObject *py_o;
 
 	assert(type == CONTENT_OBJECT ||
@@ -309,13 +309,13 @@ CCNObject_New_charbuf(enum _pyccn_capsules type,
 			type == SIGNATURE ||
 			type == SIGNED_INFO);
 
-	p = ccn_charbuf_create();
+	p = ndn_charbuf_create();
 	if (!p)
 		return PyErr_NoMemory();
 
-	py_o = CCNObject_New(type, p);
+	py_o = NDNObject_New(type, p);
 	if (!py_o) {
-		ccn_charbuf_destroy(&p);
+		ndn_charbuf_destroy(&p);
 		return NULL;
 	}
 

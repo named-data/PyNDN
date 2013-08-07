@@ -1,12 +1,12 @@
-from pyccn import CCN, Name
+from pyndn import NDN, Name
 
-c = CCN()
+c = NDN()
 print(c)
 
 n = Name()
 print(n)
 
-n = Name("ccnx:/ccnx/ping")
+n = Name("ndn:/ndnx/ping")
 print(n)
 
 co = c.get(n)
@@ -15,7 +15,7 @@ print(co)
 #this shouldn't cause segfault
 print(n)
 
-n = Name("ccnx:/ccnx/some_nonexisting_name")
+n = Name("ndn:/ndnx/some_nonexisting_name")
 co = c.get(n, None, 100)
 
 #this shouldn't cause segfault!

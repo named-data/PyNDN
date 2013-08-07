@@ -12,7 +12,7 @@
 #include <time.h>
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
-#include <ccn/ccn.h>
+#include <ndn/ndn.h>
 
 #define APPIDLEN SHA256_DIGEST_LENGTH
 #define APPKEYLEN SHA256_DIGEST_LENGTH
@@ -54,12 +54,12 @@ unsigned char * appID(unsigned char * uniqueAppName, unsigned int uniqueAppName_
 unsigned char * appKey(unsigned char * k, unsigned int keylen, unsigned char * appid, unsigned char * appkey);
 
 // Symmetric
-void authenticateCommand(state * st, struct ccn_charbuf * commandname, unsigned char * appname, unsigned int appname_len, unsigned char * appkey);
+void authenticateCommand(state * st, struct ndn_charbuf * commandname, unsigned char * appname, unsigned int appname_len, unsigned char * appkey);
 
 // Public key
-void authenticateCommandSig(state * st, struct ccn_charbuf * commandname, unsigned char * appname, unsigned int appname_len, RSA * app_signing_key);
+void authenticateCommandSig(state * st, struct ndn_charbuf * commandname, unsigned char * appname, unsigned int appname_len, RSA * app_signing_key);
 
 // Use with both symmetric and asymmetric
-int verifyCommand(struct ccn_charbuf * authenticatedname, unsigned char * fixtureKey, unsigned int keylen, RSA * pubkey, state * currstate, unsigned long int maxTimeDifferenceMsec);
+int verifyCommand(struct ndn_charbuf * authenticatedname, unsigned char * fixtureKey, unsigned int keylen, RSA * pubkey, state * currstate, unsigned long int maxTimeDifferenceMsec);
 
 #endif

@@ -1,6 +1,6 @@
-from pyccn import ContentObject, _pyccn
+from pyndn import ContentObject, _pyndn
 
-a = _pyccn.content_to_bytearray
+a = _pyndn.content_to_bytearray
 
 assert(a("hello world") == b"hello world")
 

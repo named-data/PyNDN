@@ -3,7 +3,7 @@
 
 known bugs:
 + chat (python part) doesn't seem to work with python3 (need to find out why)
-+ receiving.py testcase uses ccnput, it'll fail if ccnput is not in the same
++ receiving.py testcase uses ndnput, it'll fail if ndnput is not in the same
   path
 
 some improvements:
@@ -12,7 +12,7 @@ some improvements:
 + combine ContentObject + parsed ContentObject + comps together, same with
   Interest (i.e. all of those parts would be seen in python as one variable). I
   think they're strongly related together.
-+ remove all _pyccn_* in front of python commands
++ remove all _pyndn_* in front of python commands
 + implement ContentObject.verify()
 - providing own timestamp in ContentObject currently will say it's not
   implemented (it'll use current time when not specified)
@@ -24,7 +24,7 @@ improvements not currently planned to be implemented:
 - revise code for generating digest and public keys from private ones (the code
   works, but I feel I'm probably doing unnecessary steps due to not fully
   understanding openssl documentation for example my code to make copy of
-  ccn_pkey has 4 steps (make new pkey, wrap it in capsule, convert existing key
+  ndn_pkey has 4 steps (make new pkey, wrap it in capsule, convert existing key
   to RSA, put that RSA key in the new pkey - perhaps there's a _dup() call
   which I could use. Or for example the digest code expects key in RSA format,
   then converts it to DER, but in some parts of the code I already have it as
@@ -33,10 +33,10 @@ improvements not currently planned to be implemented:
 
 Possible problems:
 - check key verification (key embedded in content object, or key name)
-- test cases to verify ContentObject and Interest generated from ccn_data is
+- test cases to verify ContentObject and Interest generated from ndn_data is
   correct
 
 Documentation:
 + remove license from every file and point to COPYING
 + mention --enable-shared in doc for Mac
-- explanatory of locking code in CCN.py in the beginning of the file
+- explanatory of locking code in NDN.py in the beginning of the file

@@ -2,13 +2,13 @@
 
 tmpsite=@abs_top_builddir@/tests/install@PYTHON_SITE_PKG@
 
-modpath=${tmpsite}/pyccn
+modpath=${tmpsite}/pyndn
 pypath=${tmpsite}:$PYTHONPATH
 
 PYTHONPATH=$pypath
 LD_LIBRARY_PATH=$modpath:$LD_LIBRARY_PATH
 DYLD_LIBRARY_PATH=$modpath:$DYLD_LIBRARY_PATH
-PATH=@CCN_BIN@:$PATH
+PATH=@NDN_BIN@:$PATH
 
 export PYTHONPATH LD_LIBRARY_PATH DYLD_LIBRARY_PATH
 

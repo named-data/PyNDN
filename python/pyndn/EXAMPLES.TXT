@@ -1,13 +1,13 @@
 
-Need to export PYTHONPATH=/Users/jburke/Documents/workspace/pyccn/Debug
+Need to export PYTHONPATH=/Users/jburke/Documents/workspace/pyndn/Debug
 
 On the Mac, need to make sure you access the version of Python the libraries are compiled against
 /System/Library/Frameworks/Python.framework/Versions/Current/bin/python
 
 some examples that should work - 
 
-import CCN,Name,Interest,ContentObject,Key
-c = CCN.CCN()
+import NDN,Name,Interest,ContentObject,Key
+c = NDN.NDN()
 k = Key.Key()
 k.generateRSA(1024)
 n = Name.Name(["Foo","Foo"])
@@ -29,21 +29,21 @@ co.signedInfo = si
 co.sign(k)
 c.put(co)
 
-import _pyccn, ContentObject
+import _pyndn, ContentObject
 sig = ContentObject.Signature()
 sig.digestAlgorithm="foo"
 sig.witness = bytearray("bar")
 sig.signatureBits= bytearray('124091')
-fork = _pyccn._pyccn_Signature_from_ccn(_pyccn._pyccn_Signature_to_ccn(sig)) 
+fork = _pyndn._pyndn_Signature_from_ndn(_pyndn._pyndn_Signature_to_ndn(sig)) 
 
 
-import CCN
-c = CCN.CCN()
+import NDN
+c = NDN.NDN()
 k = c.getDefaultKey()
 
 
-import CCN,Name,Interest
-c = CCN.CCN()
+import NDN,Name,Interest
+c = NDN.NDN()
 n = Name.Name()
 i = Interest.Interest()
 n.components = ["foo", "bar"]
@@ -51,31 +51,31 @@ co = c.get(n,i,5000)
 n.components = ["foo", "zero"]
 co = c.get(n,i,5000)
 
-import _pyccn
+import _pyndn
 import Name
 n = Name.Name()
 n.components=["fork","beer", "hat we weave and wonder what it would take to move over 255 characters, if we keep going and going tangled web that we weave and wonder what it would take to move over 255 characters, if we keep going and going tangled web that we weave and wonder what it would take to move over 255 characters, if we keep going and going tangled web that we weave and wonder what it would take to move over 255 characters, if we keep going and going tangled web that we weave and wonder what it would take to move over 255 characters, if we keep going and going tangled web that we weave and wonder what it would take to move over 255 characters, if we keep going and going tangled web that we weave and wonder what it would take to move over 255 characters, if we keep going and going tangled web that we weave and wonder what it would take to move over 255 characters, if we keep going and going the END"]
-k = _pyccn._pyccn_Name_from_ccn(n.ccn_data)
+k = _pyndn._pyndn_Name_from_ndn(n.ndn_data)
 print k.components
 
-import CCN,Name,Interest
-c = CCN.CCN()
+import NDN,Name,Interest
+c = NDN.NDN()
 n = Name.Name()
 n.components = ["foo","foo"]
 i = Interest.Interest()
 c.get(n,i,5000)
 
-import CCN,Interest,Name,Closure
+import NDN,Interest,Name,Closure
 cl = Closure.Closure()
-c = CCN.CCN()
+c = NDN.NDN()
 n = Name.Name()
 n.components = ["foo","foo"]
 i = Interest.Interest()
 c.expressInterest(n,cl,i)
 c.run(1000)
 
-import CCN,Name,Interest,ContentObject, Key
-c = CCN.CCN()
+import NDN,Name,Interest,ContentObject, Key
+c = NDN.NDN()
 n = Name.Name(["foo","frou"])
 i = Interest.Interest()
 co = ContentObject.ContentObject()

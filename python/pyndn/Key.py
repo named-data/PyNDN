@@ -5,74 +5,74 @@
 #             Jeff Burke <jburke@ucla.edu>
 #
 
-# Fronts ccn_pkey.
-from . import _pyccn
+# Fronts ndn_pkey.
+from . import _pyndn
 from . import Name
 
 class Key(object):
 	def __init__(self):
 		self.type = None
 		self.publicKeyID = None # SHA256 hash
-		# pyccn
-		self.ccn_data_dirty = False
-		self.ccn_data_public = None  # backing pkey
-		self.ccn_data_private = None # backing pkey
+		# pyndn
+		self.ndn_data_dirty = False
+		self.ndn_data_public = None  # backing pkey
+		self.ndn_data_private = None # backing pkey
 
-	def __get_ccn(self):
+	def __get_ndn(self):
 		pass
 
 	def generateRSA(self, numbits):
-		_pyccn.generate_RSA_key(self, numbits)
+		_pyndn.generate_RSA_key(self, numbits)
 
 	def privateToDER(self):
-		if not self.ccn_data_private:
-			raise _pyccn.CCNKeyError("Key is not private")
-		return _pyccn.DER_write_key(self.ccn_data_private)
+		if not self.ndn_data_private:
+			raise _pyndn.NDNKeyError("Key is not private")
+		return _pyndn.DER_write_key(self.ndn_data_private)
 
 	def publicToDER(self):
-		return _pyccn.DER_write_key(self.ccn_data_public)
+		return _pyndn.DER_write_key(self.ndn_data_public)
 
 	def privateToPEM(self, filename = None):
-		if not self.ccn_data_private:
-			raise _pyccn.CCNKeyError("Key is not private")
+		if not self.ndn_data_private:
+			raise _pyndn.NDNKeyError("Key is not private")
 
 		if filename:
 			f = open(filename, 'w')
-			_pyccn.PEM_write_key(self.ccn_data_private, file=f)
+			_pyndn.PEM_write_key(self.ndn_data_private, file=f)
 			f.close()
 		else:
-			return _pyccn.PEM_write_key(self.ccn_data_private)
+			return _pyndn.PEM_write_key(self.ndn_data_private)
 
 	def publicToPEM(self, filename = None):
 		if filename:
 			f = open(filename, 'w')
-			_pyccn.PEM_write_key(self.ccn_data_public, file=f)
+			_pyndn.PEM_write_key(self.ndn_data_public, file=f)
 			f.close()
 		else:
-			return _pyccn.PEM_write_key(self.ccn_data_public)
+			return _pyndn.PEM_write_key(self.ndn_data_public)
 
 	def fromDER(self, private = None, public = None):
 		if private:
-			(self.ccn_data_private, self.ccn_data_public, self.publicKeyID) = \
-				_pyccn.DER_read_key(private=private)
+			(self.ndn_data_private, self.ndn_data_public, self.publicKeyID) = \
+				_pyndn.DER_read_key(private=private)
 			return
 		if public:
-			(self.ccn_data_private, self.ccn_data_public, self.publicKeyID) = \
-				_pyccn.DER_read_key(public=public)
+			(self.ndn_data_private, self.ndn_data_public, self.publicKeyID) = \
+				_pyndn.DER_read_key(public=public)
 			return
 
 	def fromPEM(self, filename = None, private = None, public = None):
 		if filename:
 			f = open(filename, 'r')
-			(self.ccn_data_private, self.ccn_data_public, self.publicKeyID) = \
-				_pyccn.PEM_read_key(file=f)
+			(self.ndn_data_private, self.ndn_data_public, self.publicKeyID) = \
+				_pyndn.PEM_read_key(file=f)
 			f.close()
 		elif private:
-			(self.ccn_data_private, self.ccn_data_public, self.publicKeyID) = \
-				_pyccn.PEM_read_key(private=private)
+			(self.ndn_data_private, self.ndn_data_public, self.publicKeyID) = \
+				_pyndn.PEM_read_key(private=private)
 		elif public:
-			(self.ccn_data_private, self.ccn_data_public, self.publicKeyID) = \
-				_pyccn.PEM_read_key(public=public)
+			(self.ndn_data_private, self.ndn_data_public, self.publicKeyID) = \
+				_pyndn.PEM_read_key(public=public)
 
 # plus library helper functions to generate and serialize keys?
 
@@ -84,29 +84,29 @@ class KeyLocator(object):
 		self.keyName = arg if type(arg) is Name.Name else None
 		self.certificate = None
 
-		# pyccn
-		self.ccn_data_dirty = True
-		self.ccn_data = None  # backing charbuf
+		# pyndn
+		self.ndn_data_dirty = True
+		self.ndn_data = None  # backing charbuf
 
 	def __setattr__(self, name, value):
-		if name != "ccn_data" and name != "ccn_data_dirty":
-			self.ccn_data_dirty = True
+		if name != "ndn_data" and name != "ndn_data_dirty":
+			self.ndn_data_dirty = True
 		object.__setattr__(self, name, value)
 
 	def __getattribute__(self, name):
-		if name=="ccn_data":
-			if object.__getattribute__(self, 'ccn_data_dirty'):
+		if name=="ndn_data":
+			if object.__getattribute__(self, 'ndn_data_dirty'):
 				if object.__getattribute__(self, 'keyName'):
-					self.ccn_data = _pyccn.KeyLocator_to_ccn(
-						name=self.keyName.ccn_data)
+					self.ndn_data = _pyndn.KeyLocator_to_ndn(
+						name=self.keyName.ndn_data)
 				elif object.__getattribute__(self, 'key'):
-					self.ccn_data = _pyccn.KeyLocator_to_ccn(
-						key=self.key.ccn_data_public)
+					self.ndn_data = _pyndn.KeyLocator_to_ndn(
+						key=self.key.ndn_data_public)
 				elif object.__getattribute__(self, 'certificate'):
 					#same but with cert= arg
 					raise NotImplementedError("certificate support is not implemented")
 				else:
 					raise TypeError("No name, key nor certificate defined")
 
-				self.ccn_data_dirty = False
+				self.ndn_data_dirty = False
 		return object.__getattribute__(self, name)

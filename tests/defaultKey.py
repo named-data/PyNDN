@@ -1,3 +1,3 @@
-from pyccn import CCN
-c = CCN()
+from pyndn import NDN
+c = NDN()
 k = c.getDefaultKey()

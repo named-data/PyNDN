@@ -5,21 +5,21 @@
 #             Jeff Burke <jburke@ucla.edu>
 #
 
-# Front ccn_parsed_interest.
+# Front ndn_parsed_interest.
 # Sort of.
 
 #
-#    //  IMPORTANT:  Exclusion component list must be sorted following "Canonical CCNx ordering"
-#    //              http://www.ccnx.org/releases/latest/doc/technical/CanonicalOrder.html
+#    //  IMPORTANT:  Exclusion component list must be sorted following "Canonical NDNx ordering"
+#    //              http://www.ndnx.org/releases/latest/doc/technical/CanonicalOrder.html
 #    //              in which shortest components go first.
 #
 
-from . import _pyccn
+from . import _pyndn
 from . import Name
 import utils
 
 class AOKType(utils.Flag):
-	_prefix = "pyccn"
+	_prefix = "pyndn"
 
 AOK_NONE = AOKType.new_flag('AOK_NONE', 0x0)
 AOK_CS = AOKType.new_flag('AOK_CS', 0x1)  # Answer from content store
@@ -46,26 +46,26 @@ class Interest(object):
 		self.interestLifetime = interestLifetime
 		self.nonce = nonce
 
-		# pyccn
-		self.ccn_data_dirty = True
-		self.ccn_data = None  # backing charbuf
+		# pyndn
+		self.ndn_data_dirty = True
+		self.ndn_data = None  # backing charbuf
 
 	def __setattr__(self, name, value):
-		if name != "ccn_data_dirty":
-			self.ccn_data_dirty = True
+		if name != "ndn_data_dirty":
+			self.ndn_data_dirty = True
 		object.__setattr__(self, name, value)
 
 	def __getattribute__(self, name):
-		if name == "ccn_data":
+		if name == "ndn_data":
 			# force refresh if components changed
-			if object.__getattribute__(self, 'name') and self.name.ccn_data_dirty:
-				self.ccn_data_dirty = True
-			elif object.__getattribute__(self, 'exclude') and self.exclude.ccn_data_dirty:
-				self.ccn_data_dirty = True
+			if object.__getattribute__(self, 'name') and self.name.ndn_data_dirty:
+				self.ndn_data_dirty = True
+			elif object.__getattribute__(self, 'exclude') and self.exclude.ndn_data_dirty:
+				self.ndn_data_dirty = True
 
-			if object.__getattribute__(self, 'ccn_data_dirty'):
-				self.ccn_data = _pyccn.Interest_obj_to_ccn(self)
-				self.ccn_data_dirty = False
+			if object.__getattribute__(self, 'ndn_data_dirty'):
+				self.ndn_data = _pyndn.Interest_obj_to_ndn(self)
+				self.ndn_data_dirty = False
 		return object.__getattribute__(self, name)
 
 	def __str__(self):
@@ -106,7 +106,7 @@ class Interest(object):
 		if self.nonce is not None:
 			args += ["nonce=%r" % self.nonce]
 
-		return "pyccn.Interest(%s)" % ", ".join(args)
+		return "pyndn.Interest(%s)" % ", ".join(args)
 
 	def get_aok_value(self):
 		global AOK_DEFAULT
@@ -132,38 +132,38 @@ class ExclusionFilter(object):
 	def __init__(self):
 		self.components = []
 
-		# pyccn
-		self.ccn_data_dirty = False
-		self.ccn_data = None  # backing charbuf
+		# pyndn
+		self.ndn_data_dirty = False
+		self.ndn_data = None  # backing charbuf
 
 	def reset(self):
 		self.components = []
 
 	def add_names(self, names):
-		self.ccn_data_dirty = True
+		self.ndn_data_dirty = True
 		self.components.extend(sorted(names))
 
 	def add_name(self, name):
 		if not type(name) is Name.Name:
 			raise TypeError("Name type required")
 
-		self.ccn_data_dirty = True
+		self.ndn_data_dirty = True
 		self.components.append(name)
 
 	def add_any(self):
 		self.components.append(Name.Name(name_type = Name.NAME_ANY))
 
 	def __setattr__(self, name, value):
-		if name != "ccn_data_dirty":
-			self.ccn_data_dirty = True
+		if name != "ndn_data_dirty":
+			self.ndn_data_dirty = True
 		object.__setattr__(self, name, value)
 
 	def __getattribute__(self, name):
-		if name == "ccn_data":
-			if object.__getattribute__(self, 'ccn_data_dirty'):
-				self.ccn_data = _pyccn.ExclusionFilter_names_to_ccn(
+		if name == "ndn_data":
+			if object.__getattribute__(self, 'ndn_data_dirty'):
+				self.ndn_data = _pyndn.ExclusionFilter_names_to_ndn(
 					self.components)
-				self.ccn_data_dirty = False
+				self.ndn_data_dirty = False
 		return object.__getattribute__(self, name)
 
 	def __str__(self):

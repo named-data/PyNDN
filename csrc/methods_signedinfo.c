@@ -6,9 +6,9 @@
  */
 
 #include "python_hdr.h"
-#include <ccn/ccn.h>
+#include <ndn/ndn.h>
 
-#include "pyccn.h"
+#include "pyndn.h"
 #include "util.h"
 #include "methods_key.h"
 #include "methods_signedinfo.h"
@@ -22,37 +22,37 @@
 
 // Can be called directly from c library
 //
-// Pointer to a tagged blob starting with CCN_DTAG_SignedInfo
+// Pointer to a tagged blob starting with NDN_DTAG_SignedInfo
 //
 
 PyObject *
-SignedInfo_obj_from_ccn(PyObject *py_signed_info)
+SignedInfo_obj_from_ndn(PyObject *py_signed_info)
 {
-	struct ccn_charbuf *signed_info;
+	struct ndn_charbuf *signed_info;
 	PyObject *py_obj_SignedInfo, *py_o;
-	struct ccn_buf_decoder decoder, *d;
+	struct ndn_buf_decoder decoder, *d;
 	size_t start, stop, size;
 	const unsigned char *ptr;
 	int r;
 
-	signed_info = CCNObject_Get(SIGNED_INFO, py_signed_info);
+	signed_info = NDNObject_Get(SIGNED_INFO, py_signed_info);
 
-	debug("SignedInfo_from_ccn start, size=%zd\n", signed_info->length);
+	debug("SignedInfo_from_ndn start, size=%zd\n", signed_info->length);
 
 	// 1) Create python object
 	py_obj_SignedInfo = PyObject_CallObject(g_type_SignedInfo, NULL);
 	if (!py_obj_SignedInfo)
 		return NULL;
 
-	// 2) Set ccn_data to a cobject pointing to the c struct
+	// 2) Set ndn_data to a cobject pointing to the c struct
 	//    and ensure proper destructor is set up for the c object.
-	r = PyObject_SetAttrString(py_obj_SignedInfo, "ccn_data", py_signed_info);
+	r = PyObject_SetAttrString(py_obj_SignedInfo, "ndn_data", py_signed_info);
 	JUMP_IF_NEG(r, error);
 
 	// 3) Parse c structure and fill python attributes
 	//    using PyObject_SetAttrString
 	// based on chk_signing_params
-	// from ccn_client.c
+	// from ndn_client.c
 	//
 	//outputs:
 
@@ -60,28 +60,28 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 	// are initialized to None (through the .py file __init__)
 	//
 
-	d = ccn_buf_decoder_start(&decoder, signed_info->buf, signed_info->length);
+	d = ndn_buf_decoder_start(&decoder, signed_info->buf, signed_info->length);
 
-	if (!ccn_buf_match_dtag(d, CCN_DTAG_SignedInfo)) {
-		PyErr_Format(g_PyExc_CCNSignedInfoError, "Error finding"
-				" CCN_DTAG_SignedInfo (decoder state: %d)", d->decoder.state);
+	if (!ndn_buf_match_dtag(d, NDN_DTAG_SignedInfo)) {
+		PyErr_Format(g_PyExc_NDNSignedInfoError, "Error finding"
+				" NDN_DTAG_SignedInfo (decoder state: %d)", d->decoder.state);
 		goto error;
 	}
 
-	ccn_buf_advance(d);
+	ndn_buf_advance(d);
 
 	/* PublisherPublic Key */
 	//XXX: should we check for case when PublishePublicKeyDigest is not present? -dk
 	start = d->decoder.token_index;
-	ccn_parse_required_tagged_BLOB(d, CCN_DTAG_PublisherPublicKeyDigest,
+	ndn_parse_required_tagged_BLOB(d, NDN_DTAG_PublisherPublicKeyDigest,
 			16, 64);
 	stop = d->decoder.token_index;
 
-	r = ccn_ref_tagged_BLOB(CCN_DTAG_PublisherPublicKeyDigest, d->buf, start,
+	r = ndn_ref_tagged_BLOB(NDN_DTAG_PublisherPublicKeyDigest, d->buf, start,
 			stop, &ptr, &size);
 	if (r < 0) {
-		PyErr_Format(g_PyExc_CCNSignedInfoError, "Error parsing"
-				" CCN_DTAG_PublisherPublicKey (decoder state %d)",
+		PyErr_Format(g_PyExc_NDNSignedInfoError, "Error parsing"
+				" NDN_DTAG_PublisherPublicKey (decoder state %d)",
 				d->decoder.state);
 		goto error;
 	}
@@ -97,18 +97,18 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 
 	/* Timestamp */
 	start = d->decoder.token_index;
-	ccn_parse_required_tagged_BLOB(d, CCN_DTAG_Timestamp, 1, -1);
+	ndn_parse_required_tagged_BLOB(d, NDN_DTAG_Timestamp, 1, -1);
 	stop = d->decoder.token_index;
 
-	r = ccn_ref_tagged_BLOB(CCN_DTAG_Timestamp, d->buf, start, stop, &ptr,
+	r = ndn_ref_tagged_BLOB(NDN_DTAG_Timestamp, d->buf, start, stop, &ptr,
 			&size);
 	if (r < 0) {
-		PyErr_Format(g_PyExc_CCNSignedInfoError, "Error parsing"
-				" CCN_DTAG_Timestamp (decoder state %d)", d->decoder.state);
+		PyErr_Format(g_PyExc_NDNSignedInfoError, "Error parsing"
+				" NDN_DTAG_Timestamp (decoder state %d)", d->decoder.state);
 		goto error;
 	}
 
-	//    self.timeStamp = None   # CCNx timestamp
+	//    self.timeStamp = None   # NDNx timestamp
 	debug("PyObject_SetAttrString timeStamp\n");
 	py_o = PyBytes_FromStringAndSize((const char*) ptr, size);
 	JUMP_IF_NULL(py_o, error);
@@ -118,14 +118,14 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 
 	/* Type */
 	assert(d->decoder.state >= 0);
-	r = ccn_parse_optional_tagged_binary_number(d, CCN_DTAG_Type, 3, 3,
-			CCN_CONTENT_DATA);
+	r = ndn_parse_optional_tagged_binary_number(d, NDN_DTAG_Type, 3, 3,
+			NDN_CONTENT_DATA);
 	if (d->decoder.state < 0) {
-		PyErr_SetString(g_PyExc_CCNSignedInfoError, "Unable to parse type");
+		PyErr_SetString(g_PyExc_NDNSignedInfoError, "Unable to parse type");
 		goto error;
 	}
 
-	py_o = _pyccn_Int_FromLong(r);
+	py_o = _pyndn_Int_FromLong(r);
 	JUMP_IF_NULL(py_o, error);
 	r = PyObject_SetAttrString(py_obj_SignedInfo, "type", py_o);
 	Py_DECREF(py_o);
@@ -133,12 +133,12 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 
 	/*
 		start = d->decoder.token_index;
-		ccn_parse_optional_tagged_BLOB(d, CCN_DTAG_Type, 1, -1);
+		ndn_parse_optional_tagged_BLOB(d, NDN_DTAG_Type, 1, -1);
 		stop = d->decoder.token_index;
 
-		r = ccn_ref_tagged_BLOB(CCN_DTAG_Type, d->buf, start, stop, &ptr, &size);
+		r = ndn_ref_tagged_BLOB(NDN_DTAG_Type, d->buf, start, stop, &ptr, &size);
 		if (r == 0) {
-			//    type = None   # CCNx type
+			//    type = None   # NDNx type
 			// TODO: Provide a string representation with the Base64 mnemonic?
 			debug("PyObject_SetAttrString type\n");
 			py_o = PyByteArray_FromStringAndSize((const char*) ptr, size);
@@ -150,11 +150,11 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 	 */
 
 	/* FreshnessSeconds */
-	r = ccn_parse_optional_tagged_nonNegativeInteger(d, CCN_DTAG_FreshnessSeconds);
+	r = ndn_parse_optional_tagged_nonNegativeInteger(d, NDN_DTAG_FreshnessSeconds);
 	if (r >= 0) {
 		//    self.freshnessSeconds = None
 		debug("PyObject_SetAttrString freshnessSeconds\n");
-		py_o = _pyccn_Int_FromLong(r);
+		py_o = _pyndn_Int_FromLong(r);
 		JUMP_IF_NULL(py_o, error);
 		r = PyObject_SetAttrString(py_obj_SignedInfo, "freshnessSeconds", py_o);
 		Py_DECREF(py_o);
@@ -163,13 +163,13 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 
 	/* FinalBlockID */
 #if 0 /* old code (left in case mine is wrong - dk) */
-	if (ccn_buf_match_dtag(d, CCN_DTAG_FinalBlockID)) {
-		ccn_buf_advance(d);
+	if (ndn_buf_match_dtag(d, NDN_DTAG_FinalBlockID)) {
+		ndn_buf_advance(d);
 		start = d->decoder.token_index;
-		if (ccn_buf_match_some_blob(d))
-			ccn_buf_advance(d);
+		if (ndn_buf_match_some_blob(d))
+			ndn_buf_advance(d);
 		stop = d->decoder.token_index;
-		ccn_buf_check_close(d);
+		ndn_buf_check_close(d);
 		if (d->decoder.state >= 0 && stop > start) {
 			//    self.finalBlockID = None
 			fprintf(stderr, "PyObject_SetAttrString finalBlockID, len=%zd\n", stop - start);
@@ -180,10 +180,10 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 	}
 #endif
 	start = d->decoder.token_index;
-	ccn_parse_optional_tagged_BLOB(d, CCN_DTAG_FinalBlockID, 1, -1);
+	ndn_parse_optional_tagged_BLOB(d, NDN_DTAG_FinalBlockID, 1, -1);
 	stop = d->decoder.token_index;
 
-	r = ccn_ref_tagged_BLOB(CCN_DTAG_FinalBlockID, d->buf, start, stop, &ptr,
+	r = ndn_ref_tagged_BLOB(NDN_DTAG_FinalBlockID, d->buf, start, stop, &ptr,
 			&size);
 	if (r == 0) {
 		//    self.finalBlockID = None
@@ -198,15 +198,15 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 	/* KeyLocator */
 #if 0 /* Old code in case mine is wrong - dk */
 	start = d->decoder.token_index;
-	if (ccn_buf_match_dtag(d, CCN_DTAG_KeyLocator))
-		ccn_buf_advance_past_element(d);
+	if (ndn_buf_match_dtag(d, NDN_DTAG_KeyLocator))
+		ndn_buf_advance_past_element(d);
 	stop = d->decoder.token_index;
 	if (d->decoder.state >= 0 && stop > start) {
 		fprintf(stderr, "PyObject_SetAttrString keyLocator, len=%zd\n", stop - start);
-		struct ccn_charbuf* keyLocator = ccn_charbuf_create();
-		ccn_charbuf_append(keyLocator, d->buf + start, stop - start);
+		struct ndn_charbuf* keyLocator = ndn_charbuf_create();
+		ndn_charbuf_append(keyLocator, d->buf + start, stop - start);
 		//    self.keyLocator = None
-		py_o = KeyLocator_obj_from_ccn(keyLocator); // it will free
+		py_o = KeyLocator_obj_from_ndn(keyLocator); // it will free
 		PyObject_SetAttrString(py_obj_SignedInfo, "keyLocator", py_o);
 		Py_INCREF(py_o);
 	}
@@ -217,14 +217,14 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 	 * us to parse it differently
 	 */
 	start = d->decoder.token_index;
-	if (ccn_buf_match_dtag(d, CCN_DTAG_KeyLocator)) {
-		struct ccn_charbuf *key_locator;
+	if (ndn_buf_match_dtag(d, NDN_DTAG_KeyLocator)) {
+		struct ndn_charbuf *key_locator;
 		PyObject *py_key_locator;
 
-		r = ccn_buf_advance_past_element(d);
+		r = ndn_buf_advance_past_element(d);
 		if (r < 0) {
-			PyErr_Format(g_PyExc_CCNSignedInfoError, "Error locating"
-					" CCN_DTAG_KeyLocator (decoder state: %d, r: %d)",
+			PyErr_Format(g_PyExc_NDNSignedInfoError, "Error locating"
+					" NDN_DTAG_KeyLocator (decoder state: %d, r: %d)",
 					d->decoder.state, r);
 			goto error;
 		}
@@ -243,10 +243,10 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 
 		debug("PyObject_SetAttrString keyLocator, len=%zd\n", size);
 
-		py_key_locator = CCNObject_New_charbuf(KEY_LOCATOR, &key_locator);
+		py_key_locator = NDNObject_New_charbuf(KEY_LOCATOR, &key_locator);
 		JUMP_IF_NULL(py_key_locator, error);
 
-		r = ccn_charbuf_append(key_locator, ptr, size);
+		r = ndn_charbuf_append(key_locator, ptr, size);
 		if (r < 0) {
 			Py_DECREF(py_key_locator);
 			PyErr_NoMemory();
@@ -254,7 +254,7 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 		}
 
 		//    self.keyLocator = None
-		py_o = KeyLocator_obj_from_ccn(py_key_locator);
+		py_o = KeyLocator_obj_from_ndn(py_key_locator);
 		Py_DECREF(py_key_locator);
 		JUMP_IF_NULL(py_o, error);
 		r = PyObject_SetAttrString(py_obj_SignedInfo, "keyLocator", py_o);
@@ -262,16 +262,16 @@ SignedInfo_obj_from_ccn(PyObject *py_signed_info)
 		JUMP_IF_NEG(r, error);
 	}
 
-	ccn_buf_check_close(d);
+	ndn_buf_check_close(d);
 	if (d->decoder.state < 0) {
-		PyErr_Format(g_PyExc_CCNSignedInfoError, "SignedInfo decoding error"
+		PyErr_Format(g_PyExc_NDNSignedInfoError, "SignedInfo decoding error"
 				" (decoder state: %d, numval: %zd)", d->decoder.state,
 				d->decoder.numval);
 		goto error;
 	}
 
 	// 4) Return the created object
-	debug("SignedInfo_from_ccn ends\n");
+	debug("SignedInfo_from_ndn ends\n");
 	return py_obj_SignedInfo;
 
 error:
@@ -281,7 +281,7 @@ error:
 }
 
 PyObject *
-_pyccn_cmd_SignedInfo_to_ccn(PyObject *UNUSED(self), PyObject *args,
+_pyndn_cmd_SignedInfo_to_ndn(PyObject *UNUSED(self), PyObject *args,
 		PyObject *kwds)
 {
 	static char *kwlist[] = {"pubkey_digest", "type", "timestamp",
@@ -289,13 +289,13 @@ _pyccn_cmd_SignedInfo_to_ccn(PyObject *UNUSED(self), PyObject *args,
 
 	PyObject *py_pubkey_digest, *py_timestamp = Py_None,
 			*py_final_block = Py_None, *py_key_locator = Py_None;
-	struct ccn_charbuf *si;
+	struct ndn_charbuf *si;
 	PyObject *py_si;
 	int r;
 	size_t publisher_key_id_size;
 	const void *publisher_key_id;
 	int type, freshness = -1;
-	struct ccn_charbuf *timestamp = NULL, *finalblockid = NULL,
+	struct ndn_charbuf *timestamp = NULL, *finalblockid = NULL,
 			*key_locator = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "Oi|OiOO", kwlist,
@@ -326,57 +326,57 @@ _pyccn_cmd_SignedInfo_to_ccn(PyObject *UNUSED(self), PyObject *args,
 			return NULL;
 		}
 
-		finalblockid = ccn_charbuf_create();
+		finalblockid = ndn_charbuf_create();
 		JUMP_IF_NULL_MEM(finalblockid, error);
 
 		s = PyBytes_AS_STRING(py_final_block);
 		len = PyBytes_GET_SIZE(py_final_block);
 
-		r = ccn_charbuf_append_tt(finalblockid, len, CCN_BLOB);
+		r = ndn_charbuf_append_tt(finalblockid, len, NDN_BLOB);
 		JUMP_IF_NEG_MEM(r, error);
 
-		r = ccn_charbuf_append(finalblockid, s, len);
+		r = ndn_charbuf_append(finalblockid, s, len);
 		JUMP_IF_NEG_MEM(r, error);
 	} else
 		finalblockid = NULL;
 
 	if (py_key_locator == Py_None)
 		key_locator = NULL;
-	else if (CCNObject_IsValid(KEY_LOCATOR, py_key_locator))
-		key_locator = CCNObject_Get(KEY_LOCATOR, py_key_locator);
+	else if (NDNObject_IsValid(KEY_LOCATOR, py_key_locator))
+		key_locator = NDNObject_Get(KEY_LOCATOR, py_key_locator);
 	else {
-		PyErr_SetString(PyExc_TypeError, "key_locator needs to be a CCN KeyLocator object");
+		PyErr_SetString(PyExc_TypeError, "key_locator needs to be a NDN KeyLocator object");
 		return NULL;
 	}
 
-	py_si = CCNObject_New_charbuf(SIGNED_INFO, &si);
+	py_si = NDNObject_New_charbuf(SIGNED_INFO, &si);
 	JUMP_IF_NULL(py_si, error);
 
-	r = ccn_signed_info_create(si, publisher_key_id, publisher_key_id_size,
+	r = ndn_signed_info_create(si, publisher_key_id, publisher_key_id_size,
 			timestamp, type, freshness, finalblockid, key_locator);
-	ccn_charbuf_destroy(&finalblockid);
+	ndn_charbuf_destroy(&finalblockid);
 
 	if (r < 0) {
 		Py_DECREF(py_si);
-		PyErr_SetString(g_PyExc_CCNError, "Error while creating SignedInfo");
+		PyErr_SetString(g_PyExc_NDNError, "Error while creating SignedInfo");
 		return NULL;
 	}
 
 	return py_si;
 
 error:
-	ccn_charbuf_destroy(&finalblockid);
+	ndn_charbuf_destroy(&finalblockid);
 	return NULL;
 }
 
 PyObject *
-_pyccn_cmd_SignedInfo_obj_from_ccn(PyObject *UNUSED(self), PyObject *py_signed_info)
+_pyndn_cmd_SignedInfo_obj_from_ndn(PyObject *UNUSED(self), PyObject *py_signed_info)
 {
-	if (!CCNObject_IsValid(SIGNED_INFO, py_signed_info)) {
+	if (!NDNObject_IsValid(SIGNED_INFO, py_signed_info)) {
 		PyErr_SetString(PyExc_TypeError, "Must pass a CObject containing"
-				" a struct ccn_charbuf*");
+				" a struct ndn_charbuf*");
 		return NULL;
 	}
 
-	return SignedInfo_obj_from_ccn(py_signed_info);
+	return SignedInfo_obj_from_ndn(py_signed_info);
 }

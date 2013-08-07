@@ -1,9 +1,9 @@
 #
-# This example was written for older version of PyCCN and it is currently broken
+# This example was written for older version of PyNDN and it is currently broken
 #
 
-from pyccn.Repository import RepoUpload
-from pyccn import CCN, ContentObject, Name, Key
+from pyndn.Repository import RepoUpload
+from pyndn import NDN, ContentObject, Name, Key
 import struct
 
 if __name__ == '__main__':
@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
 		# SignedInfo
 		si = ContentObject.SignedInfo()
-		si.type = ContentObject.ContentType.CCN_CONTENT_DATA
+		si.type = ContentObject.ContentType.NDN_CONTENT_DATA
 		si.finalBlockID = last_segment
 		si.publisherPublicKeyDigest = key.publicKeyID
 		si.keyLocator = Key.KeyLocator(key)
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 	name_v = Name.Name(name)
 	name_v.appendVersion()
 
-	handle = CCN.CCN()
+	handle = NDN.NDN()
 	key = handle.getDefaultKey()
 	last_seg = segment(9)
 

@@ -5,18 +5,18 @@
 #             Jeff Burke <jburke@ucla.edu>
 #
 
-__all__ = ['CCN', 'Closure', 'ContentObject', 'Interest', 'Key', 'Name']
+__all__ = ['NDN', 'Closure', 'ContentObject', 'Interest', 'Key', 'Name']
 
 import sys as _sys
 
 try:
-	from pyccn.CCN import *
-	from pyccn.Closure import *
-	from pyccn.ContentObject import *
-	from pyccn.Interest import *
-	from pyccn.Key import *
-	from pyccn.Name import *
-	from pyccn import NameCrypto
+	from pyndn.NDN import *
+	from pyndn.Closure import *
+	from pyndn.ContentObject import *
+	from pyndn.Interest import *
+	from pyndn.Key import *
+	from pyndn.Name import *
+	from pyndn import NameCrypto
 except ImportError:
 	del _sys.modules[__name__]
 	raise

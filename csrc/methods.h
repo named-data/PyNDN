@@ -8,10 +8,10 @@
 #ifndef METHODS_H
 #  define	METHODS_H
 
-PyObject *_pyccn_cmd_generate_RSA_key(PyObject *UNUSED(self), PyObject *args);
-PyObject *_pyccn_SigningParams_from_ccn(PyObject *UNUSED(self),
+PyObject *_pyndn_cmd_generate_RSA_key(PyObject *UNUSED(self), PyObject *args);
+PyObject *_pyndn_SigningParams_from_ndn(PyObject *UNUSED(self),
 		PyObject *py_signing_params);
-PyObject *_pyccn_cmd_dump_charbuf(PyObject *self, PyObject *py_charbuf);
-PyObject *_pyccn_cmd_new_charbuf(PyObject *self, PyObject *args);
+PyObject *_pyndn_cmd_dump_charbuf(PyObject *self, PyObject *py_charbuf);
+PyObject *_pyndn_cmd_new_charbuf(PyObject *self, PyObject *args);
 
 #endif	/* METHODS_H */

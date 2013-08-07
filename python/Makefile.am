@@ -1,27 +1,27 @@
-pyccndir = $(PYTHON_SITE_PKG)/pyccn
-pyccnimpldir = $(pyccndir)/impl
-#pyccnstagingdir = $(pyccndir)/staging
+pyndndir = $(PYTHON_SITE_PKG)/pyndn
+pyndnimpldir = $(pyndndir)/impl
+#pyndnstagingdir = $(pyndndir)/staging
 
-pyccn_PYTHON = \
-	pyccn/__init__.py \
-	pyccn/CCN.py \
-	pyccn/Closure.py \
-	pyccn/ContentObject.py \
-	pyccn/Interest.py \
-	pyccn/Key.py \
-	pyccn/Name.py \
-	pyccn/Repository.py \
-	pyccn/utils.py
+pyndn_PYTHON = \
+	pyndn/__init__.py \
+	pyndn/NDN.py \
+	pyndn/Closure.py \
+	pyndn/ContentObject.py \
+	pyndn/Interest.py \
+	pyndn/Key.py \
+	pyndn/Name.py \
+	pyndn/Repository.py \
+	pyndn/utils.py
 
-pyccnimpl_PYTHON = \
-	pyccn/impl/__init__.py \
-	pyccn/impl/ccnb.py \
-	pyccn/impl/enumeration.py \
-	pyccn/impl/segmenting.py
+pyndnimpl_PYTHON = \
+	pyndn/impl/__init__.py \
+	pyndn/impl/ndnb.py \
+	pyndn/impl/enumeration.py \
+	pyndn/impl/segmenting.py
 
-#pyccnstaging_PYTHON = \
-#	pyccn/staging/__init__.py \
-#	pyccn/staging/RepoControl.py
-	pyccn/CCN.py
+#pyndnstaging_PYTHON = \
+#	pyndn/staging/__init__.py \
+#	pyndn/staging/RepoControl.py
+	pyndn/NDN.py
 
-pyccn_PYTHON += pyccn/NameCrypto.py
+pyndn_PYTHON += pyndn/NameCrypto.py

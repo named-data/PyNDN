@@ -1,0 +1,5 @@
+PyNDN v0.1 (2013-08-07)
+
+First release of PyNDN with bindings to NDNx.
+
+* Forked from PyCCN.  Renamed all CCN to NDN.

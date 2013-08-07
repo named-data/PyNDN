@@ -1,19 +1,19 @@
-from pyccn import CCN, _pyccn
+from pyndn import NDN, _pyndn
 from threading import Timer
 from datetime import datetime
 
-handle = _pyccn.create()
+handle = _pyndn.create()
 
 try:
-	_pyccn.run(handle, 100)
-except _pyccn.CCNError:
+	_pyndn.run(handle, 100)
+except _pyndn.NDNError:
 	pass
 else:
-	raise AssertionError("ccn_run() should fail when not connected")
+	raise AssertionError("ndn_run() should fail when not connected")
 
 del handle
 
-c = CCN()
+c = NDN()
 c.run(0)
 
 def change_timeout():

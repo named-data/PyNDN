@@ -2,11 +2,11 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([PyCCN], [0.2], [takeda@takeda.tk])
+AC_INIT([PyNDN], [0.2], [takeda@takeda.tk])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
-AC_CONFIG_SRCDIR([csrc/pyccn.c])
+AC_CONFIG_SRCDIR([csrc/pyndn.c])
 
 AM_INIT_AUTOMAKE([foreign 1.11 silent-rules parallel-tests color-tests -Wall -Werror])
 AM_SILENT_RULES([yes])
@@ -20,7 +20,7 @@ m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
 
 # Checks for libraries.
-AX_CHECK_CCN([], AC_MSG_ERROR([CCNx is required to compile PyCCN]))
+AX_CHECK_NDN([], AC_MSG_ERROR([NDNx is required to compile PyNDN]))
 
 # Checks for header files.
 AX_PYTHON_DEVEL([>= 2.7])

@@ -1,4 +1,4 @@
-from pyccn import Closure, Interest, Name
+from pyndn import Closure, Interest, Name
 
 class RepoUpload(Closure.Closure):
 	def __init__(self, handle, name, content):
@@ -14,7 +14,7 @@ class RepoUpload(Closure.Closure):
 		interest.name += '\xC1.R.sw'
 		interest.name.appendNonce()
 
-		print("Expressing interest: ccnx:%s" % interest.name)
+		print("Expressing interest: ndn:%s" % interest.name)
 
 		self.handle.expressInterest(interest.name, self, interest)
 		self.handle.run(-1)

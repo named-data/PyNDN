@@ -30,3 +30,6 @@ Makefile.in
 csrc/namecrypto/.DS_Store
 
 csrc/.DS_Store
+
+# Emacs temp files
+*~

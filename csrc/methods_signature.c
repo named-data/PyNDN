@@ -6,9 +6,9 @@
  */
 
 #include "python_hdr.h"
-#include <ccn/ccn.h>
+#include <ndn/ndn.h>
 
-#include "pyccn.h"
+#include "pyndn.h"
 #include "methods_signature.h"
 #include "objects.h"
 #include "util.h"
@@ -19,7 +19,7 @@
 #endif
 
 static int
-append_digest_algorithm(struct ccn_charbuf *signature,
+append_digest_algorithm(struct ndn_charbuf *signature,
 		PyObject *py_obj_Signature)
 {
 	PyObject *py_digestAlgorithm = NULL;
@@ -36,11 +36,11 @@ append_digest_algorithm(struct ccn_charbuf *signature,
 	JUMP_IF_NULL(py_digestAlgorithm, error);
 
 	if (py_digestAlgorithm != Py_None) {
-		py_o = _pyccn_unicode_to_utf8(py_digestAlgorithm, &str, &str_len);
+		py_o = _pyndn_unicode_to_utf8(py_digestAlgorithm, &str, &str_len);
 		assert((Py_ssize_t) strlen(str) == str_len);
 		JUMP_IF_NULL(py_o, error);
 
-		r = ccnb_append_tagged_blob(signature, CCN_DTAG_DigestAlgorithm,
+		r = ndnb_append_tagged_blob(signature, NDN_DTAG_DigestAlgorithm,
 				str, str_len);
 		Py_DECREF(py_o);
 		JUMP_IF_NEG_MEM(r, error);
@@ -55,7 +55,7 @@ error:
 }
 
 static int
-append_witness(struct ccn_charbuf *signature, PyObject *py_obj_Signature)
+append_witness(struct ndn_charbuf *signature, PyObject *py_obj_Signature)
 {
 	PyObject *py_witness = NULL;
 	const char *blob;
@@ -75,7 +75,7 @@ append_witness(struct ccn_charbuf *signature, PyObject *py_obj_Signature)
 
 		debug("witness blobsize = %zd\n", blobsize);
 
-		r = ccnb_append_tagged_blob(signature, CCN_DTAG_Witness, blob,
+		r = ndnb_append_tagged_blob(signature, NDN_DTAG_Witness, blob,
 				blobsize);
 		JUMP_IF_NEG_MEM(r, error);
 	}
@@ -89,7 +89,7 @@ error:
 }
 
 static int
-append_signature_bits(struct ccn_charbuf *signature,
+append_signature_bits(struct ndn_charbuf *signature,
 		PyObject *py_obj_Signature)
 {
 	PyObject *py_signatureBits = NULL;
@@ -109,7 +109,7 @@ append_signature_bits(struct ccn_charbuf *signature,
 		JUMP_IF_NULL(blob, error);
 		blobsize = PyBytes_GET_SIZE(py_signatureBits);
 
-		r = ccnb_append_tagged_blob(signature, CCN_DTAG_SignatureBits, blob,
+		r = ndnb_append_tagged_blob(signature, NDN_DTAG_SignatureBits, blob,
 				blobsize);
 		JUMP_IF_NEG_MEM(r, error);
 	}
@@ -123,18 +123,18 @@ error:
 }
 
 static PyObject *
-Signature_obj_to_ccn(PyObject *py_obj_Signature)
+Signature_obj_to_ndn(PyObject *py_obj_Signature)
 {
-	struct ccn_charbuf *signature;
+	struct ndn_charbuf *signature;
 	PyObject *py_signature;
 	int r;
 
-	debug("Signature_to_ccn starts \n");
+	debug("Signature_to_ndn starts \n");
 
-	py_signature = CCNObject_New_charbuf(SIGNATURE, &signature);
+	py_signature = NDNObject_New_charbuf(SIGNATURE, &signature);
 	JUMP_IF_NULL(py_signature, error);
 
-	r = ccn_charbuf_append_tt(signature, CCN_DTAG_Signature, CCN_DTAG);
+	r = ndn_charbuf_append_tt(signature, NDN_DTAG_Signature, NDN_DTAG);
 	JUMP_IF_NEG_MEM(r, error);
 
 	r = append_digest_algorithm(signature, py_obj_Signature);
@@ -146,7 +146,7 @@ Signature_obj_to_ccn(PyObject *py_obj_Signature)
 	r = append_signature_bits(signature, py_obj_Signature);
 	JUMP_IF_NEG(r, error);
 
-	r = ccn_charbuf_append_closer(signature); /* </Signature> */
+	r = ndn_charbuf_append_closer(signature); /* </Signature> */
 	JUMP_IF_NEG_MEM(r, error);
 
 	return py_signature;
@@ -158,51 +158,51 @@ error:
 // Can be called directly from c library
 
 PyObject *
-Signature_obj_from_ccn(PyObject *py_signature)
+Signature_obj_from_ndn(PyObject *py_signature)
 {
-	struct ccn_charbuf *signature;
+	struct ndn_charbuf *signature;
 	PyObject *py_obj_signature, *py_o;
-	struct ccn_buf_decoder decoder, *d;
+	struct ndn_buf_decoder decoder, *d;
 	size_t start, stop, size;
 	const unsigned char *ptr;
 	int r;
 
-	assert(CCNObject_IsValid(SIGNATURE, py_signature));
-	signature = CCNObject_Get(SIGNATURE, py_signature);
+	assert(NDNObject_IsValid(SIGNATURE, py_signature));
+	signature = NDNObject_Get(SIGNATURE, py_signature);
 
-	debug("Signature_from_ccn start, len=%zd\n", signature->length);
+	debug("Signature_from_ndn start, len=%zd\n", signature->length);
 
 	// 1) Create python object
 	py_obj_signature = PyObject_CallObject(g_type_Signature, NULL);
 	if (!py_obj_signature)
 		return NULL;
 
-	// 2) Set ccn_data to a cobject pointing to the c struct
+	// 2) Set ndn_data to a cobject pointing to the c struct
 	//    and ensure proper destructor is set up for the c object.
-	r = PyObject_SetAttrString(py_obj_signature, "ccn_data", py_signature);
+	r = PyObject_SetAttrString(py_obj_signature, "ndn_data", py_signature);
 	JUMP_IF_NEG(r, error);
 
 	// 3) Parse c structure and fill python attributes
 
 	// Neither DigestAlgorithm nor Witness are included in the packet
-	// from ccnput, so they are apparently both optional
-	d = ccn_buf_decoder_start(&decoder, signature->buf, signature->length);
+	// from ndnput, so they are apparently both optional
+	d = ndn_buf_decoder_start(&decoder, signature->buf, signature->length);
 
-	if (!ccn_buf_match_dtag(d, CCN_DTAG_Signature)) {
-		PyErr_Format(g_PyExc_CCNSignatureError, "Error finding"
-				" CCN_DTAG_Signature (decoder state: %d)", d->decoder.state);
+	if (!ndn_buf_match_dtag(d, NDN_DTAG_Signature)) {
+		PyErr_Format(g_PyExc_NDNSignatureError, "Error finding"
+				" NDN_DTAG_Signature (decoder state: %d)", d->decoder.state);
 		goto error;
 	}
 
 	debug("Is a signature\n");
-	ccn_buf_advance(d);
+	ndn_buf_advance(d);
 
-	/* CCN_DTAG_DigestAlgorithm */
+	/* NDN_DTAG_DigestAlgorithm */
 	start = d->decoder.token_index;
-	ccn_parse_optional_tagged_BLOB(d, CCN_DTAG_DigestAlgorithm, 1, -1);
+	ndn_parse_optional_tagged_BLOB(d, NDN_DTAG_DigestAlgorithm, 1, -1);
 	stop = d->decoder.token_index;
 
-	r = ccn_ref_tagged_BLOB(CCN_DTAG_DigestAlgorithm, d->buf, start, stop,
+	r = ndn_ref_tagged_BLOB(NDN_DTAG_DigestAlgorithm, d->buf, start, stop,
 			&ptr, &size);
 	if (r == 0) {
 		debug("PyObject_SetAttrString digestAlgorithm\n");
@@ -213,18 +213,18 @@ Signature_obj_from_ccn(PyObject *py_signature)
 		JUMP_IF_NEG(r, error);
 	}
 
-	/* CCN_DTAG_Witness */
+	/* NDN_DTAG_Witness */
 	start = d->decoder.token_index;
-	ccn_parse_optional_tagged_BLOB(d, CCN_DTAG_Witness, 1, -1);
+	ndn_parse_optional_tagged_BLOB(d, NDN_DTAG_Witness, 1, -1);
 	stop = d->decoder.token_index;
 	debug("witness start %zd stop %zd\n", start, stop);
 
-	r = ccn_ref_tagged_BLOB(CCN_DTAG_Witness, d->buf, start, stop, &ptr, &size);
+	r = ndn_ref_tagged_BLOB(NDN_DTAG_Witness, d->buf, start, stop, &ptr, &size);
 	if (r == 0) {
 		// The Witness is represented as a DER-encoded PKCS#1 DigestInfo,
 		// which contains an AlgorithmIdentifier (an OID, together with any necessary parameters)
 		// and a byte array (OCTET STRING) containing the digest information to be interpreted according to that OID.
-		// http://www.ccnx.org/releases/latest/doc/technical/SignatureGeneration.html
+		// http://www.ndnx.org/releases/latest/doc/technical/SignatureGeneration.html
 		debug("PyObject_SetAttrString witness\n");
 		py_o = PyBytes_FromStringAndSize((const char*) ptr, size);
 		JUMP_IF_NULL(py_o, error);
@@ -233,16 +233,16 @@ Signature_obj_from_ccn(PyObject *py_signature)
 		JUMP_IF_NEG(r, error);
 	}
 
-	/* CCN_DTAG_SignatureBits */
+	/* NDN_DTAG_SignatureBits */
 	start = d->decoder.token_index;
-	ccn_parse_required_tagged_BLOB(d, CCN_DTAG_SignatureBits, 1, -1);
+	ndn_parse_required_tagged_BLOB(d, NDN_DTAG_SignatureBits, 1, -1);
 	stop = d->decoder.token_index;
 
-	r = ccn_ref_tagged_BLOB(CCN_DTAG_SignatureBits, d->buf, start, stop, &ptr,
+	r = ndn_ref_tagged_BLOB(NDN_DTAG_SignatureBits, d->buf, start, stop, &ptr,
 			&size);
 	if (r < 0) {
-		PyErr_Format(g_PyExc_CCNSignatureError, "Error parsing"
-				" CCN_DTAG_SignatureBits (decoder state %d)", d->decoder.state);
+		PyErr_Format(g_PyExc_NDNSignatureError, "Error parsing"
+				" NDN_DTAG_SignatureBits (decoder state %d)", d->decoder.state);
 		goto error;
 	}
 
@@ -254,16 +254,16 @@ Signature_obj_from_ccn(PyObject *py_signature)
 	Py_DECREF(py_o);
 	JUMP_IF_NEG(r, error);
 
-	ccn_buf_check_close(d);
+	ndn_buf_check_close(d);
 	if (d->decoder.state < 0) {
-		PyErr_Format(g_PyExc_CCNSignatureError, "Signature decoding error"
+		PyErr_Format(g_PyExc_NDNSignatureError, "Signature decoding error"
 				" (decoder state: %d, numval: %zd)", d->decoder.state,
 				d->decoder.numval);
 		goto error;
 	}
 
 	// 4) Return the created object
-	debug("Signature_from_ccn ends\n");
+	debug("Signature_from_ndn ends\n");
 	return py_obj_signature;
 
 error:
@@ -272,7 +272,7 @@ error:
 }
 
 PyObject *
-_pyccn_cmd_Signature_obj_to_ccn(PyObject *UNUSED(self), PyObject *py_obj_Signature)
+_pyndn_cmd_Signature_obj_to_ndn(PyObject *UNUSED(self), PyObject *py_obj_Signature)
 {
 	if (strcmp(py_obj_Signature->ob_type->tp_name, "Signature") != 0) {
 		PyErr_SetString(PyExc_TypeError, "Must pass a Signature");
@@ -280,17 +280,17 @@ _pyccn_cmd_Signature_obj_to_ccn(PyObject *UNUSED(self), PyObject *py_obj_Signatu
 		return NULL;
 	}
 
-	return Signature_obj_to_ccn(py_obj_Signature);
+	return Signature_obj_to_ndn(py_obj_Signature);
 }
 
 PyObject *
-_pyccn_cmd_Signature_obj_from_ccn(PyObject *UNUSED(self), PyObject *py_signature)
+_pyndn_cmd_Signature_obj_from_ndn(PyObject *UNUSED(self), PyObject *py_signature)
 {
-	if (!CCNObject_IsValid(SIGNATURE, py_signature)) {
-		PyErr_SetString(PyExc_TypeError, "Must pass a CCN object containing"
+	if (!NDNObject_IsValid(SIGNATURE, py_signature)) {
+		PyErr_SetString(PyExc_TypeError, "Must pass a NDN object containing"
 				" signature");
 		return NULL;
 	}
 
-	return Signature_obj_from_ccn(py_signature);
+	return Signature_obj_from_ndn(py_signature);
 }

@@ -4,13 +4,13 @@
 # Written by: Derek Kulinski <takeda@takeda.tk>
 #
 
-import pyccn
-from pyccn.impl import ccnb
+import pyndn
+from pyndn.impl import ndnb
 
-def ccnb_enumerate(names):
+def ndnb_enumerate(names):
 	out = bytearray()
 
 	for name in names:
-		out += ccnb.dtag(ccnb.DTAG_LINK, name.get_ccnb())
+		out += ndnb.dtag(ndnb.DTAG_LINK, name.get_ndnb())
 
-	return ccnb.dtag(ccnb.DTAG_COLLECTION, out)
+	return ndnb.dtag(ndnb.DTAG_COLLECTION, out)
