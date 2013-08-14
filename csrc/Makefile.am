@@ -1,8 +1,7 @@
-pyndndir = $(PYTHON_SITE_PKG)/pyndn
-
 SUBDIRS = namecrypto
 
-pyndn_LTLIBRARIES = _pyndn.la
+pkgpyexec_LTLIBRARIES = _pyndn.la
+
 noinst_HEADERS = \
 	pyndn.h \
 	key_utils.h \
@@ -37,17 +36,11 @@ noinst_HEADERS += \
 _pyndn_la_SOURCES += \
 	methods_namecrypto.c
 
-#_pyndn_la_SOURCES += $(noinst_HEADERS:.h=.h.gch)
-
 #-O3 -pedantic -Wall -Wextra -fdiagnostics-show-option -Winvalid-pch
 #-Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -Werror
-_pyndn_la_CPPFLAGS = -std=c99 -Wall -Wextra -Winvalid-pch -Wstrict-prototypes
-_pyndn_la_CPPFLAGS += -Wmissing-prototypes -Wshadow -fdiagnostics-show-option
-_pyndn_la_CPPFLAGS += @PYTHON_CPPFLAGS@ @NDN_INCLUDES@ @OPENSSL_INCLUDES@ -Wno-unknown-pragmas
-_pyndn_la_LIBADD = namecrypto/libnamecrypto.la @NDN_LIBS@ @OPENSSL_LIBS@
-_pyndn_la_LDFLAGS = -avoid-version -module @PYTHON_LDFLAGS@ @NDN_LDFLAGS@ @OPENSSL_LDFLAGS@
-
-.h.h.gch:
-	$(CC) -c $<
-
-SUFFIXES = .h .h.gch
+_pyndn_la_CFLAGS  = -std=c99 -Wall -Wextra -Winvalid-pch -Wstrict-prototypes
+_pyndn_la_CFLAGS += -Wmissing-prototypes -Wshadow -fdiagnostics-show-option
+_pyndn_la_CFLAGS += -Wno-unknown-pragmas
+_pyndn_la_CPPFLAGS = @PYTHON_INCLUDES@ @NDN_INCLUDES@ @OPENSSL_INCLUDES@
+_pyndn_la_LIBADD = $(builddir)/namecrypto/libnamecrypto.la @NDN_LIBS@ @OPENSSL_LIBS@
+_pyndn_la_LDFLAGS = -avoid-version -module @NDN_LDFLAGS@ @OPENSSL_LDFLAGS@

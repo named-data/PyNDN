@@ -1,8 +1,6 @@
-pyndndir = $(PYTHON_SITE_PKG)/pyndn
-pyndnimpldir = $(pyndndir)/impl
-#pyndnstagingdir = $(pyndndir)/staging
+pyndnimpldir = $(pkgpyexecdir)/impl
 
-pyndn_PYTHON = \
+pkgpyexec_PYTHON = \
 	pyndn/__init__.py \
 	pyndn/NDN.py \
 	pyndn/Closure.py \
@@ -22,6 +20,6 @@ pyndnimpl_PYTHON = \
 #pyndnstaging_PYTHON = \
 #	pyndn/staging/__init__.py \
 #	pyndn/staging/RepoControl.py
-	pyndn/NDN.py
+#	pyndn/NDN.py
 
-pyndn_PYTHON += pyndn/NameCrypto.py
+pkgpyexec_PYTHON += pyndn/NameCrypto.py

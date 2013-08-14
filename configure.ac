@@ -22,8 +22,19 @@ LT_INIT
 # Checks for libraries.
 AX_CHECK_NDN([], AC_MSG_ERROR([NDNx is required to compile PyNDN]))
 
+AM_PATH_PYTHON([2.7])
+AC_PATH_PROGS([PYTHON_CONFIG],
+	[python$PYTHON_VERSION-config python-config],
+	[no],
+	[`dirname $PYTHON`])
+AS_IF([test "$PYTHON_CONFIG" = no],
+	[AC_MSG_ERROR([cannot find python-config for $PYTHON.])])
+
 # Checks for header files.
-AX_PYTHON_DEVEL([>= 2.7])
+AC_MSG_CHECKING([python include flags])
+PYTHON_INCLUDES=`$PYTHON_CONFIG --includes`
+AC_MSG_RESULT([$PYTHON_INCLUDES])
+AC_SUBST(PYTHON_INCLUDES)
 
 # Checks for typedefs, structures, and compiler characteristics.
 
