@@ -1,5 +1,7 @@
 pyndndir = $(PYTHON_SITE_PKG)/pyndn
 
+SUBDIRS = namecrypto
+
 pyndn_LTLIBRARIES = _pyndn.la
 noinst_HEADERS = \
 	pyndn.h \
@@ -30,12 +32,10 @@ _pyndn_la_SOURCES = \
 	objects.c \
 	util.c
 
-
-noinst_HEADERS += methods_namecrypto.h
-_pyndn_la_SOURCES += methods_namecrypto.c \
-	namecrypto/authentication.c \
-	namecrypto/encryption.c \
-	namecrypto/toolkit.c
+noinst_HEADERS += \
+	methods_namecrypto.h
+_pyndn_la_SOURCES += \
+	methods_namecrypto.c
 
 #_pyndn_la_SOURCES += $(noinst_HEADERS:.h=.h.gch)
 
@@ -44,8 +44,8 @@ _pyndn_la_SOURCES += methods_namecrypto.c \
 _pyndn_la_CPPFLAGS = -std=c99 -Wall -Wextra -Winvalid-pch -Wstrict-prototypes
 _pyndn_la_CPPFLAGS += -Wmissing-prototypes -Wshadow -fdiagnostics-show-option
 _pyndn_la_CPPFLAGS += @PYTHON_CPPFLAGS@ @NDN_INCLUDES@ @OPENSSL_INCLUDES@ -Wno-unknown-pragmas
-_pyndn_la_LDFLAGS = -avoid-version -module @PYTHON_LDFLAGS@ \
-	@NDN_LDFLAGS@ @OPENSSL_LDFLAGS@ @NDN_LIBS@ @OPENSSL_LIBS@
+_pyndn_la_LIBADD = namecrypto/libnamecrypto.la @NDN_LIBS@ @OPENSSL_LIBS@
+_pyndn_la_LDFLAGS = -avoid-version -module @PYTHON_LDFLAGS@ @NDN_LDFLAGS@ @OPENSSL_LDFLAGS@
 
 .h.h.gch:
 	$(CC) -c $<
