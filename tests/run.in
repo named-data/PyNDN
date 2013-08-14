@@ -1,16 +1,19 @@
 #! /bin/sh
 
-tmpsite=@abs_top_builddir@/tests/install@PYTHON_SITE_PKG@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+pyexecdir=@pyexecdir@
 
-modpath=${tmpsite}/pyndn
-pypath=${tmpsite}:$PYTHONPATH
+testpath=@abs_top_builddir@/tests/install
+pypath=${testpath}@pyexecdir@
+modpath=${testpath}@pkgpyexecdir@
 
-PYTHONPATH=$pypath
+PYTHONPATH=$pypath:$PYTHONPATH
 LD_LIBRARY_PATH=$modpath:$LD_LIBRARY_PATH
 DYLD_LIBRARY_PATH=$modpath:$DYLD_LIBRARY_PATH
 PATH=@NDN_BIN@:$PATH
 
-export PYTHONPATH LD_LIBRARY_PATH DYLD_LIBRARY_PATH
+export PYTHONPATH LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 
 test -z "$1" &&
 	exec @PYTHON@
