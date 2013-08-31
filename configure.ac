@@ -22,7 +22,22 @@ LT_INIT
 # Checks for libraries.
 AX_CHECK_NDN([], AC_MSG_ERROR([NDNx is required to compile PyNDN]))
 
-AM_PATH_PYTHON([2.7])
+AM_PATH_PYTHON([2.7], [
+	dnl Make sure files will be installed in right location (yes, even on Mac)
+	if test "x${prefix}" = "xNONE"; then
+		pythondir=`$PYTHON -c "import sys; import distutils.sysconfig as sc; \
+			path = sc.get_python_lib(0, 0, '${ac_default_prefix}'); \
+			print(path if path in sys.path else sc.get_python_lib(0, 0))"`
+		pyexecdir=`$PYTHON -c "import sys; import distutils.sysconfig as sc; \
+			path = sc.get_python_lib(1, 0, '${ac_default_prefix}'); \
+			print(path if path in sys.path else sc.get_python_lib(1, 0))"`
+	else
+		pythondir=`$PYTHON -c "import distutils.sysconfig as sc; \
+			print(sc.get_python_lib(0, 0, '${prefix}'))"`
+		pyexecdir=`$PYTHON -c "import distutils.sysconfig as sc; \
+			print(sc.get_python_lib(1, 0, '${prefix}'))"`
+	fi
+])
 AC_PATH_PROGS([PYTHON_CONFIG],
 	[python$PYTHON_VERSION-config python-config],
 	[no],
