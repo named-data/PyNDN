@@ -1,3 +1,10 @@
+PyNDN v0.2 (2013-11-08)
+
+Bug fixes
+* http://redmine.named-data.net/issues/1040 Error on Mac: no module named pyndn
+* Fixed the Makefile To use automake's built-in python support
+* Module was not installed in the right path on Mac
+
 PyNDN v0.1 (2013-08-07)
 
 First release of PyNDN with bindings to NDNx.
